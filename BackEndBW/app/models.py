@@ -1,4 +1,4 @@
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, SQLModel, Relationship, CheckConstraint
 # from typing import Optional, list
 from datetime import date, datetime
 
@@ -33,7 +33,9 @@ class Discount(SQLModel, table=True):
     book_id: int = Field(foreign_key="book.id", ondelete="CASCADE")
     discount_start_date: date
     discount_end_date: date
-    discount_price: float
+    discount_price: float = Field(ge=0)
+
+    __table_args__= (CheckConstraint("discount_start_date < discount_end_date", name="check_discount_dates"),)
 
     book: Book = Relationship(back_populates="discount")
 
