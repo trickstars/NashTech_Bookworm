@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field
 
 class AuthorBase(SQLModel):
     author_name: str = Field(max_length=255)
-    author_bio: str
+    author_bio: str | None = Field(default=None)
 
 class AuthorCreate(AuthorBase):
     pass 

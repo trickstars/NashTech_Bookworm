@@ -1,8 +1,8 @@
 from sqlmodel import SQLModel, Field
 
 class CategoryBase(SQLModel):
-    category_name: str = Field(max_length=120)
-    category_desc: str = Field(max_length=255)
+    category_name: str = Field(max_length=120, unique=True)
+    category_desc: str | None = Field(default=None, max_length=255)
 
 class CategoryCreate(CategoryBase):
     pass 
