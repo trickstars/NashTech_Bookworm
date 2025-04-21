@@ -30,7 +30,7 @@ class Book(BookBase, table=True):
 
 class Discount(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    book_id: int = Field(foreign_key="book.id", ondelete="CASCADE")
+    book_id: int = Field(foreign_key="book.id", unique=True, ondelete="CASCADE")
     discount_start_date: date # khong co yeu cau, vi the tam thoi khong de null
     discount_end_date: date | None = Field(default=None)
     discount_price: float = Field(ge=0)
@@ -45,7 +45,7 @@ class Review(SQLModel, table=True):
     review_title: str = Field(max_length=120)
     review_details: str | None = Field(default=None)
     review_date: datetime
-    rating_star: str = Field(max_length=255) # ???
+    rating_star: int = Field(ge=1, le=5)
 
     book: Book = Relationship(back_populates="reviews")
 
