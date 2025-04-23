@@ -1,61 +1,32 @@
-from fastapi import APIRouter, HTTPException
-from sqlmodel import select, func, desc
+from fastapi import APIRouter, HTTPException, Query, Depends
+# from sqlmodel import select, func, desc
 
-from datetime import date
+# from typing import Annotated
+# from datetime import date
 
 from ..dependencies import SessionDep
 from ..models import Book, Discount
 from ..schemas.book import BookCard
+from ..schemas.query_params import FilterParam, OrderParam, PaginationParam
+from ..services import books_service
+from ..constants.enums import SortFactor
 
 router = APIRouter(prefix='/books', tags=["books"])
 
 @router.get("/")
-async def get_all_books(session: SessionDep) -> list[Book]:
-    books = session.exec(select(Book)).all()
-    # print(books)
-    if len(books) == 0:
-        raise HTTPException(status_code=404, detail="Resources not found")
-    return books
+async def get_books(*, filter_param: FilterParam = Depends(), 
+                    order_param: OrderParam = Depends(), 
+                    pagination_param: PaginationParam = Depends(), session: SessionDep) -> list[Book]:
+    print("Filter PRm", filter_param)
+    print("Order PRm", order_param)
+    print("Pagination PRm", pagination_param)
+    return await books_service.get_books(filter_param, order_param, pagination_param, session)
 
+@router.get("/top-discounted")
+async def get_top_discounted_books(session: SessionDep):
+    return await books_service.get_books(filter_param=None, order_param=OrderParam(order_by=SortFactor.SALE), pagination_param=PaginationParam(limit=10), session=session)
 
-@router.get("/top-discounted", response_model=list[BookCard])
-def get_top_discounted_books(session: SessionDep):
-    # Tạo biểu thức tính toán giá trị giảm giá
-
-    # discount_value_expr = (Book.price - Discount.discount_price).label("discount_value")
-    current_date = date.today()
-
-    statement = (
-        select(
-            Book,
-            # Book.author.author_name,
-            Discount.discount_price,
-            func.coalesce(Book.book_price - Discount.discount_price, 0).label("discount_amount")
-        )
-        .join(Discount, Book.id == Discount.book_id, isouter=True)
-        .where(
-            (Discount.discount_start_date <= current_date) &
-            (Discount.discount_end_date > current_date)
-        )
-        .order_by(desc("discount_amount"))
-        .limit(10)
-    )
-
-    results = session.exec(statement).all()
-
-    # print(results)
-
-    return [
-        BookCard(
-            id=book.id,
-            book_title=book.book_title,
-            book_price=book.book_price,
-            book_cover_photo=book.book_cover_photo,
-            author_name=book.author.author_name,
-            book_discount_price=discount_price,
-        )
-        for book, discount_price, _ in results
-    ]
+# @router.get("/featu")
 
 
 @router.get("/{book_id}")
