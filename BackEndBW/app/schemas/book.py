@@ -21,5 +21,5 @@ class BookBase(SQLModel):
 
 class BookCard(BookBase):
     book_summary: str = Field(default=None, exclude=True)
-    book_discount_price: float | None = None
-    author_name: str
+    final_price: float
+    author_name: str | None

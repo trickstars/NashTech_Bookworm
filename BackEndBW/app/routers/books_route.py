@@ -13,17 +13,17 @@ from ..constants.enums import SortFactor
 
 router = APIRouter(prefix='/books', tags=["books"])
 
-@router.get("/")
+@router.get("/", response_model=list[BookCard])
 async def get_books(*, filter_param: FilterParam = Depends(), 
                     order_param: OrderParam = Depends(), 
-                    pagination_param: PaginationParam = Depends(), session: SessionDep) -> list[Book]:
+                    pagination_param: PaginationParam = Depends(), session: SessionDep) -> list[any]:
     print("Filter PRm", filter_param)
     print("Order PRm", order_param)
     print("Pagination PRm", pagination_param)
     return await books_service.get_books(filter_param, order_param, pagination_param, session)
 
-@router.get("/top-discounted")
-async def get_top_discounted_books(session: SessionDep):
+@router.get("/top-discounted", response_model=list[BookCard])
+async def get_top_discounted_books(session: SessionDep) -> list[any]:
     return await books_service.get_books(filter_param=None, order_param=OrderParam(order_by=SortFactor.SALE), pagination_param=PaginationParam(limit=10), session=session)
 
 # @router.get("/featu")
