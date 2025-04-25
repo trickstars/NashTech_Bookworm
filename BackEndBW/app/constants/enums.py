@@ -7,3 +7,10 @@ class SortFactor(str, Enum):
     SALE = "sale"
     POPULARITY = "popularity"
     PRICE = "price"
+
+class Featured(str, Enum):
+    """
+    Enum for featured books.
+    """
+    RECOMMENDED = "recommended"
+    POPULAR = "popular"

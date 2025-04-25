@@ -8,12 +8,12 @@ from datetime import date
 
 from ..dependencies import SessionDep
 
-from ..models import Book, Review, Discount, Author
+from ..models import Book, Category, Review, Discount, Author
 
 from ..schemas.query_params import FilterParam, OrderParam, PaginationParam
 # from ..schemas.book import BookCard
 
-from ..constants.enums import SortFactor
+from ..constants.enums import Featured, SortFactor
 
 async def get_books(filter_param: FilterParam, order_param: OrderParam, pagination_param: PaginationParam, session: SessionDep) -> list[any]:
     """
@@ -62,10 +62,78 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
     # books = session.exec(select(book_alias).select_from(query)).all()
     books = session.exec(select(*book_alias.c)).mappings().all()
     if len(books) == 0:
-        print("Toi day ne")
+        # print("Toi day ne")
         raise HTTPException(status_code=404, detail="Resources not found")
     # print("Books", books)
     return books
+
+# Special get books
+async def get_featured_books(featured_type: Featured, session: SessionDep) -> list[any]:
+    """
+    Get recommended books
+    """
+    current_date = date.today()
+
+    final_price = case(
+        (
+            and_(
+                Discount.id.is_not(None),
+                or_(
+                    Discount.discount_end_date.is_(None),
+                    Discount.discount_end_date > current_date,
+                )
+            ),
+            Discount.discount_price
+        ),
+        else_=Book.book_price
+    ).label("final_price")
+
+    count_rv = func.count(Review.id).label("review_count")
+    avg_rv_rating = func.coalesce(func.avg(Review.rating_star), 0).label("avg_rating")
+
+    chosen_feature = avg_rv_rating if featured_type == Featured.RECOMMENDED else count_rv
+    query = (select(*Book.__table__.c, final_price, Author.author_name,
+                    chosen_feature,
+                    )
+                    .join(Discount, isouter=True)
+                    .join(Author, isouter=True)
+                    .join(Review, isouter=True)
+                    .group_by(Book.id, Discount.id, Author.author_name)
+                    .order_by(desc(chosen_feature), final_price))
+    
+    books = session.exec(query.limit(8)).mappings().all()
+    if len(books) == 0:
+        # print("Toi day ne")
+        raise HTTPException(status_code=404, detail="Resources not found")
+    # print("Books", books)
+    return books
+
+async def get_book_by_id(book_id: int, session: SessionDep) -> any:
+    """
+    Get book by ID
+    """
+    current_date = date.today()
+
+    final_price = case(
+        (
+            and_(
+                Discount.id.is_not(None),
+                or_(
+                    Discount.discount_end_date.is_(None),
+                    Discount.discount_end_date > current_date,
+                )
+            ),
+            Discount.discount_price
+        ),
+        else_=Book.book_price
+    ).label("final_price")
+
+    book = session.exec(select(*Book.__table__.c, final_price, Author.author_name, Category.category_name)
+                        .join(Discount, isouter=True).join(Author, isouter=True).join(Category, isouter=True)
+                        .where(Book.id == book_id)).first()
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book not found")
+    return book    
 
 # Filtering
 def get_books_filtered(query: Select, filter_param: FilterParam) -> Subquery:

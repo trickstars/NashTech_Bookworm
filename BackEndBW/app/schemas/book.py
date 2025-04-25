@@ -20,6 +20,13 @@ class BookBase(SQLModel):
 # nang cao
 
 class BookCard(BookBase):
+    id: int
     book_summary: str = Field(default=None, exclude=True)
     final_price: float
     author_name: str | None
+
+class BookDetail(BookBase):
+    id: int
+    final_price: float
+    author_name: str | None
+    category_name: str | None

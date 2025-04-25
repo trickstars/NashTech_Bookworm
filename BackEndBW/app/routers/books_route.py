@@ -6,10 +6,10 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 
 from ..dependencies import SessionDep
 from ..models import Book, Discount
-from ..schemas.book import BookCard
+from ..schemas.book import BookCard, BookDetail
 from ..schemas.query_params import FilterParam, OrderParam, PaginationParam
 from ..services import books_service
-from ..constants.enums import SortFactor
+from ..constants.enums import Featured, SortFactor
 
 router = APIRouter(prefix='/books', tags=["books"])
 
@@ -26,15 +26,17 @@ async def get_books(*, filter_param: FilterParam = Depends(),
 async def get_top_discounted_books(session: SessionDep) -> list[any]:
     return await books_service.get_books(filter_param=None, order_param=OrderParam(order_by=SortFactor.SALE), pagination_param=PaginationParam(limit=10), session=session)
 
-# @router.get("/featu")
+@router.get("/recommended", response_model=list[BookCard])
+async def get_recommended_books(session: SessionDep) -> list[any]:
+    return await books_service.get_featured_books(Featured.RECOMMENDED, session)
 
+@router.get("/popular", response_model=list[BookCard])
+async def get_popular_books(session: SessionDep) -> list[any]:
+    return await books_service.get_featured_books(Featured.POPULAR, session)
 
-@router.get("/{book_id}")
-async def get_book_by_id(book_id: int, session: SessionDep) -> Book:
-    book = session.get(Book, book_id)
-    if book is None:
-        raise HTTPException(status_code=404, detail="Resources not found")
-    return book
+@router.get("/{book_id}", response_model=BookDetail)
+async def get_book_by_id(book_id: int, session: SessionDep) -> any:
+    return await books_service.get_book_by_id(book_id, session)
 
 # @router.post("/")
 # async def create_book(create_book_info: BookCreate, session: SessionDep) -> Book:
