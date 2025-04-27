@@ -43,7 +43,7 @@ const appliedFilters = "Category #1"; // Ví dụ điều kiện lọc
 const startItem = 1;
 const endItem = 12;
 const totalItems = 126;
-const currentPage = 1;
+const currentPage: number = 1;
 const totalPages = Math.ceil(totalItems / (endItem - startItem + 1)); // Tính tổng số trang (ví dụ)
 // --- End Placeholder ---
 
