@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'; // Import Link (or NavLink for active styles)
 
-export const Header = () => {
+const Header = () => {
   // Helper function for NavLink className to handle active state
   const getNavLinkClass = ({ isActive }: { isActive: boolean }): string => {
     return `transition-colors hover:text-foreground/80 ${

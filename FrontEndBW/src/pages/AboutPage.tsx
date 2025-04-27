@@ -1,4 +1,4 @@
-export const AboutPage = () => {
+const AboutPage = () => {
     return (
       <div>
         <h1 className="text-2xl font-semibold">About Page</h1>
@@ -6,3 +6,5 @@ export const AboutPage = () => {
       </div>
     );
   };
+
+export default AboutPage; // Use this if it's the default export

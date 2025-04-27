@@ -1,4 +1,4 @@
-export const CartPage = () => {
+const CartPage = () => {
     return (
       <div>
         <h1 className="text-2xl font-semibold">Shopping Cart Page</h1>
@@ -6,3 +6,5 @@ export const CartPage = () => {
       </div>
     );
   };
+
+  export default CartPage;

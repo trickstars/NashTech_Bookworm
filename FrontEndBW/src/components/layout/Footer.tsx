@@ -1,4 +1,4 @@
-export const Footer = () => {
+const Footer = () => {
   return (
     <footer className="border-t mt-16 py-10 bg-muted/40"> {/* Increased top margin and padding */}
       <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-8"> {/* Added justify-between and gap */}

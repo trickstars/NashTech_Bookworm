@@ -1,8 +1,8 @@
 import { Outlet } from 'react-router-dom'; // Import Outlet
-import { Header } from './Header';       // Ensure path is correct
-import { Footer } from './Footer';       // Ensure path is correct
+import Header from './Header';       // Ensure path is correct
+import Footer from './Footer';       // Ensure path is correct
 
-export const Layout = () => {
+const Layout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground"> {/* Added default bg/text colors */}
       <Header />

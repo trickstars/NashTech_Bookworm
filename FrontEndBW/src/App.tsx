@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Layout } from './components/layout/Layout'; // Adjust path if needed
-import { HomePage } from './pages/HomePage';
-import { ShopPage } from './pages/ShopPage';
-import { ProductDetailPage } from './pages/ProductDetailPage';
-import { CartPage } from './pages/CartPage';
-import { AboutPage } from './pages/AboutPage';
+import Layout from './components/layout/Layout'; // Adjust path if needed
+import HomePage from './pages/HomePage';
+import ShopPage from './pages/ShopPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import CartPage from './pages/CartPage';
+import AboutPage from './pages/AboutPage';
 
 // Optional: Import a NotFoundPage component
 // import { NotFoundPage } from './pages/NotFoundPage';

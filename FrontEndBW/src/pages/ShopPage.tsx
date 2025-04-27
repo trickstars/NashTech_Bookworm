@@ -1,4 +1,4 @@
-export const ShopPage = () => {
+const ShopPage = () => {
     return (
       <div>
         <h1 className="text-2xl font-semibold">Shop Page</h1>
@@ -6,3 +6,5 @@ export const ShopPage = () => {
       </div>
     );
   };
+
+export default ShopPage
