@@ -26,7 +26,7 @@ import {
     className,
   }: BookCardProps) => {
     return (
-      <Card className={cn("w-[250px] shrink-0", className)}> {/* Width cố định và không co lại cho list ngang */}
+      <Card className={cn("shrink-0", className)}> {/* Width cố định và không co lại cho list ngang */}
         <CardHeader className="p-0 aspect-square overflow-hidden"> {/* Tỷ lệ vuông cho ảnh */}
           {/* Placeholder cho ảnh sách */}
           <div className="w-full h-full bg-secondary flex items-center justify-center">
