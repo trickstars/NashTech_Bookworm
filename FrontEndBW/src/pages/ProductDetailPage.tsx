@@ -94,66 +94,97 @@ const ProductDetailPage = () => {
           {product.categoryName}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+        {/* --- Grid 2 cột chính --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,_2fr)_minmax(0,_1fr)] gap-8 lg:gap-12">
+
+          {/* --- Cột Trái: Thông tin sách --- */}
           <div>
-            <div className="aspect-square bg-secondary rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-              <img
-                src={product.imageUrl}
-                alt={product.title}
-                className="w-full h-full object-contain"
-                loading="lazy"
-              />
-            </div>
-            <p className="text-sm text-center text-muted-foreground">By (Author) {product.author}</p>
-          </div>
-
-          <div className="flex flex-col">
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight mb-3">{product.title}</h1>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-              {product.description}
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground mb-6">
-              {product.accolades.map((item, index) => <li key={index}>{item}</li>)}
-            </ul>
-
-            <div className="mt-auto pt-6">
-               <div className="flex justify-end items-baseline gap-2 mb-4">
-                  {product.originalPrice && (
-                     <p className="text-lg text-muted-foreground line-through">
-                       ${product.originalPrice.toFixed(2)}
-                     </p>
-                   )}
-                  <p className="text-3xl font-bold text-primary">
-                    ${product.salePrice.toFixed(2)}
-                  </p>
+            {/* Layout con bên trong cột trái: dùng Flexbox */}
+            <div className="flex flex-col sm:flex-row gap-6 md:gap-8">
+               {/* Khu vực Ảnh + Tác giả */}
+               <div className="w-full sm:w-1/3 lg:w-1/4 xl:w-1/5 flex-shrink-0">
+                 {/* Thay đổi aspect ratio nếu cần, ví dụ aspect-[3/4] cho sách */}
+                 <div className="aspect-[3/4] bg-secondary rounded-lg mb-2 flex items-center justify-center overflow-hidden shadow-sm">
+                   <img
+                      src={product.imageUrl}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                 </div>
+                 <p className="text-xs text-center text-muted-foreground">By (Author) {product.author}</p>
                </div>
 
-               <div className="flex items-center space-x-3 mb-4">
-                 <label htmlFor="quantity" className="text-sm font-medium">Quantity</label>
-                 <div className="flex items-center border rounded-md">
-                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-r-none">
-                     <Minus className="h-4 w-4"/>
-                   </Button>
-                   <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      defaultValue={quantity}
-                      className="h-9 w-14 text-center border-l border-r rounded-none focus-visible:ring-0"
-                   />
-                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-l-none">
-                     <Plus className="h-4 w-4"/>
-                   </Button>
+               {/* Khu vực Text: Title, Desc, Accolades */}
+               <div className="flex-grow space-y-4">
+                 <h1 className="text-2xl lg:text-3xl font-bold tracking-tight !mt-0"> {/* Thêm !mt-0 để ghi đè space-y */}
+                   {product.title}
+                 </h1>
+                 <p className="text-muted-foreground text-sm leading-relaxed">
+                   {product.description}
+                 </p>
+                 {/* Chuyển accolades thành các đoạn <p> hoặc giữ <ul> */}
+                 <div className="space-y-1 text-sm text-muted-foreground pt-2">
+                    {product.accolades.map((item, index) => (
+                        // Dùng <p> thay cho <li> nếu không muốn dấu chấm đầu dòng
+                       <p key={index}>"{item}"</p>
+                    ))}
                  </div>
                </div>
+            </div>
+          </div>
+          {/* --- Kết thúc Cột Trái --- */}
 
-               <Button size="lg" className="w-full">
-                 Add to cart
-               </Button>
+
+          {/* --- Cột Phải: Action (Giá, Số lượng, Nút) --- */}
+          <div className="lg:sticky lg:top-20 self-start">
+             {/* Thêm style giống Card để tạo khối riêng biệt */}
+             <div className="space-y-6 rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+                {/* Price */}
+                <div className="flex justify-start items-baseline gap-2">
+                   {product.originalPrice && (
+                      <p className="text-lg text-muted-foreground line-through">
+                        ${product.originalPrice.toFixed(2)}
+                      </p>
+                    )}
+                   <p className="text-3xl font-bold text-primary">
+                     ${product.salePrice.toFixed(2)}
+                   </p>
+                </div>
+
+                {/* Quantity */}
+                <div className="flex items-center space-x-3">
+                  <label htmlFor={`quantity-${id}`} className="text-sm font-medium">Quantity</label>
+                  <div className="flex items-center border rounded-md">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-r-none">
+                      <Minus className="h-4 w-4"/>
+                    </Button>
+                    <Input
+                       id={`quantity-${id}`} // id nên là duy nhất
+                       type="number"
+                       min="1"
+                       defaultValue={quantity}
+                       className="h-9 w-14 text-center border-y-0 border-x focus-visible:ring-0"
+                       readOnly // Hoặc thêm onChange
+                    />
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-l-none">
+                      <Plus className="h-4 w-4"/>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Add to Cart Button */}
+                <Button size="lg" className="w-full">
+                  Add to cart
+                </Button>
              </div>
           </div>
+          {/* --- Kết thúc Cột Phải --- */}
+
         </div>
+        {/* --- Kết thúc Grid 2 cột chính --- */}
       </section>
+      {/* === Kết thúc Section 1 === */}
 
       <Separator />
 
