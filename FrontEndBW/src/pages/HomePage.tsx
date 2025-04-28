@@ -1,7 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BookCard from "@/components/common/BookCard";
-import { ArrowRight } from 'lucide-react'; // Icon cho nút View All
+
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'; // Icon cho nút View All
 
 // --- Sample Data (Thay thế bằng dữ liệu thật sau này) ---
 const onSaleBooks = [
@@ -10,6 +19,9 @@ const onSaleBooks = [
   { id: 3, imageUrl: '/placeholder-book.png', title: 'Atomic Habits', author: 'James Clear', price: 16.20, originalPrice: 27.00 },
   { id: 4, imageUrl: '/placeholder-book.png', title: 'Educated: A Memoir', author: 'Tara Westover', price: 17.40, originalPrice: 29.00 },
   { id: 5, imageUrl: '/placeholder-book.png', title: 'Project Hail Mary', author: 'Andy Weir', price: 19.99 },
+  { id: 6, imageUrl: '/placeholder-book.png', title: 'The Midnight Library', author: 'Matt Haig', price: 15.60, originalPrice: 28.00 },
+  { id: 7, imageUrl: '/placeholder-book.png', title: 'Klara and the Sun', author: 'Kazuo Ishiguro', price: 18.80 },
+  { id: 8, imageUrl: '/placeholder-book.png', title: 'The Vanishing Half', author: 'Brit Bennett', price: 16.20, originalPrice: 27.00 },
 ];
 
 const featuredRecommendedBooks = [
@@ -46,23 +58,36 @@ const HomePage = () => {
               View All <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
-          {/* List ngang - dùng flex và overflow-x-auto */}
-          {/* Có thể thay bằng <Carousel> của shadcn nếu muốn có nút bấm <- -> */}
+          
+          {/*<Carousel> */}
           <div className="border p-6">
-            <div className="flex space-x-4 overflow-x-auto pb-4 -mb-4 mx-auto">
-              {onSaleBooks.map((book) => (
-                <BookCard
-                  key={book.id}
-                  imageUrl={book.imageUrl}
-                  title={book.title}
-                  author={book.author}
-                  price={book.price}
-                  originalPrice={book.originalPrice}
-                  // Không cần className="w-[250px]" vì đã set trong BookCard
-                />
-              ))}
-              {/* Thêm thẻ div trống để tạo khoảng trống cuối list nếu cần */}
-              <div className="w-px shrink-0"></div>
+            <div className="relative"> {/* Container tương đối để định vị nút nếu cần */}
+              <Carousel
+                opts={{
+                  align: "start", // Căn chỉnh item đầu tiên về bên trái
+                  loop: false,     // Quan trọng: không lặp lại để nút bị vô hiệu hóa ở đầu/cuối
+                }}
+                className="w-full" // Carousel chiếm toàn bộ chiều rộng container
+              >
+                <CarouselContent className="-ml-4"> {/* Margin âm để bù đắp padding của item */}
+                  {onSaleBooks.map((book) => (
+                    <CarouselItem key={book.id} className="pl-4 md:basis-1/2 lg:basis-1/4"> {/* Padding trái và xác định kích thước */}
+                      <div className="p-1"> {/* Padding nhỏ quanh card nếu muốn */}
+                        <BookCard
+                          imageUrl={book.imageUrl}
+                          title={book.title}
+                          author={book.author}
+                          price={book.price}
+                          originalPrice={book.originalPrice}
+                          className="w-full" // Đảm bảo card lấp đầy CarouselItem
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="absolute left-[-20px] top-1/2 -translate-y-1/2 disabled:opacity-50" /> {/* Nút Previous */}
+                <CarouselNext className="absolute right-[-20px] top-1/2 -translate-y-1/2 disabled:opacity-50" /> {/* Nút Next */}
+              </Carousel>
             </div>
           </div>
         </section>
