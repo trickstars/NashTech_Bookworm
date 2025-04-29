@@ -12,6 +12,8 @@ from ..models import User
 
 from ..services.auth_service import get_user_by_username
 
+from ..utils.security import verify_token_and_get_payload
+
 # --- OAuth2 Scheme ---
 # URL trỏ đến endpoint lấy token ban đầu
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -21,38 +23,31 @@ async def get_current_user(
     session: SessionDep,
     token: Annotated[str, Depends(oauth2_scheme)] # ???
 ) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    token_expired_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token has expired",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    # Gọi hàm xác thực tập trung
+    # Hàm này sẽ raise HTTPException nếu token không hợp lệ hoặc hết hạn
+    payload = verify_token_and_get_payload(token)
 
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+    username: str | None = payload.get("sub")
+    token_type: str | None = payload.get("type")
+
+    # Kiểm tra logic cụ thể cho access token SAU KHI đã xác thực cơ bản
+    if token_type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type, expected 'access'",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        username: str | None = payload.get("sub")
-        token_type: str | None = payload.get("type") # Kiểm tra type token
 
-        # Quan trọng: Dependency này chỉ chấp nhận access token
-        if username is None or token_type != "access":
-            raise credentials_exception
+    # Không cần validate TokenData nữa vì 'sub' đã được kiểm tra trong verify_token...
 
-        token_data = TokenData(username=username)
-
-    except jwt.ExpiredSignatureError:
-        raise token_expired_exception
-    except (jwt.InvalidTokenError, ValidationError):
-        raise credentials_exception
-
-    user = get_user_by_username(session, username=token_data.username)
+    user = get_user_by_username(session, username=username)
     if user is None:
-        raise credentials_exception
+        # User có trong token nhưng không có trong DB? -> Token không hợp lệ
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found for token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return user
 
