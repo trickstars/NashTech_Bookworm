@@ -7,51 +7,81 @@ import {
     CardTitle,
   } from "@/components/ui/card"; // Giả sử bạn cấu hình alias @ là src/
   import { cn } from "@/lib/utils"; // Import hàm tiện ích cn từ shadcn
+  import type { Book } from '@/types/book';
   
-  interface BookCardProps {
-    imageUrl: string;
-    title: string;
-    author: string;
-    price: number;
-    originalPrice?: number; // Giá gốc (tùy chọn)
+  interface BookCardProps extends Book {
     className?: string;
   }
+
+  // Đọc biến môi trường (cung cấp giá trị mặc định nếu cần)
+const picsumBaseUrl = import.meta.env.VITE_PICSUM_SEED_BASE_URL || 'https://picsum.photos/seed/';
+const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/placeholder-cover.png';
+
+// Định nghĩa kích thước ảnh mong muốn (có thể đặt vào constants nếu muốn)
+const IMAGE_WIDTH = 300;
+const IMAGE_HEIGHT = 315; // Giữ tỉ lệ 1:1.05 cho ảnh sách
   
   const BookCard = ({
-    imageUrl,
-    title,
-    author,
-    price,
-    originalPrice,
-    className,
+  id,
+  bookCoverPhoto,
+  bookTitle,
+  authorName,
+  finalPrice,
+  bookPrice,
+  className,
   }: BookCardProps) => {
+    // Xác định xem có hiển thị giá gốc (bị gạch) không
+  const showOriginalPrice = bookPrice !== finalPrice;
+
+  // --- Xây dựng URL ảnh Picsum ---
+  // Picsum URL: base/{seed}/{width}/{height}
+  const actualImageUrl = `${picsumBaseUrl}${bookCoverPhoto}/${IMAGE_WIDTH}/${IMAGE_HEIGHT}`;
+
+  // --- Hàm xử lý lỗi tải ảnh ---
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    // Ngăn vòng lặp vô hạn nếu ảnh fallback cũng lỗi
+    event.currentTarget.onerror = null;
+    // --- THAY ĐỔI ĐƯỜNG DẪN NÀY ---
+    // Đặt đường dẫn đến ảnh fallback cục bộ của bạn (trong thư mục public/)
+    event.currentTarget.src = fallbackImageUrl;
+    // --- ---
+  };
+  // --- ---
+
     return (
-      <Card className={cn("shrink-0", className)}> {/* Width cố định và không co lại cho list ngang */}
-        <CardHeader className="p-0 aspect-square overflow-hidden"> {/* Tỷ lệ vuông cho ảnh */}
+      <Card className={cn("shrink-0 rounded-md gap-2 pb-1", className)}> {/* Width cố định và không co lại cho list ngang */}
+        <CardHeader className="relative w-full aspect-[1/1.05] bg-secondary overflow-hidden"> {/* Tỷ lệ vuông cho ảnh */}
           {/* Placeholder cho ảnh sách */}
           <div className="w-full h-full bg-secondary flex items-center justify-center">
-            <img src={imageUrl} alt={title} className="w-full h-full object-cover" loading="lazy"/>
+            <img src={actualImageUrl || fallbackImageUrl} // Đường dẫn ảnh sách hoặc ảnh placeholder
+            alt={bookTitle} 
+            className="absolute inset-0 w-full h-full object-cover" 
+            loading="lazy"
+            onError={handleImageError}/>
             {/* Hoặc hiển thị chữ nếu không có ảnh */}
             {/* <span className="text-muted-foreground text-sm">Book Image</span> */}
           </div>
         </CardHeader>
-        <CardContent className="p-4 pb-2">
-          <CardTitle className="text-base font-semibold line-clamp-1" title={title}>
-            {title}
+        <CardContent className="p-2 px-5 pb-5 bg-card flex-grow min-h-0"> {/* Đảm bảo nội dung không vượt quá chiều cao */}
+          <CardTitle className="text-lg font-semibold line-clamp-1" title={bookTitle}>
+            {bookTitle}
           </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-1" title={author}>{author}</p>
+          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1" title={authorName}>{authorName}</p>
         </CardContent>
-        <CardFooter className="p-4 pt-0">
-          <div>
-            {originalPrice && (
+        <CardFooter className="p-2 px-5 border-t [.border-t]:pt-2 bg-muted/50"> {/* Thêm border trên footer */}
+          <div className="flex items-baseline gap-1.5">
+            {/* --- Logic hiển thị giá mới --- */}
+            {showOriginalPrice && bookPrice && ( // Chỉ hiển thị giá gốc nếu cần
               <p className="text-xs text-muted-foreground line-through">
-                ${originalPrice.toFixed(2)}
+                ${bookPrice.toFixed(2)} {/* Hiển thị giá gốc (bookPrice) */}
               </p>
             )}
+            {/* Luôn hiển thị giá cuối cùng (finalPrice) */}
             <p className="text-base font-medium">
-              ${price.toFixed(2)}
+              ${finalPrice.toFixed(2)}  {/* Hiển thị giá bán (finalPrice) */}
             </p>
-          </div>
+            {/* --- Kết thúc logic giá --- */}
+         </div>
         </CardFooter>
       </Card>
     );
