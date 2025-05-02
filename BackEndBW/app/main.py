@@ -7,6 +7,7 @@ from .database import init_db
 from .routers import authors_route
 from .routers import books_route
 from .routers import auth
+from .routers import categories_route
 
 # --- Danh sách các origins được phép truy cập ---
 # Thay đổi các URL này cho phù hợp với môi trường của bạn
@@ -32,6 +33,7 @@ app.add_middleware(
 
 # --- Đăng ký các Routers ---
 app.include_router(authors_route.router)
+app.include_router(categories_route.router)
 app.include_router(books_route.router)
 app.include_router(auth.router)
 
