@@ -10,3 +10,7 @@ class CategoryCreate(CategoryBase):
 class CategoryUpdate(CategoryBase):
     category_name: str | None = None
     category_desc: str | None = None
+
+class CategoryPublic(CategoryBase):
+    id: int
+    category_desc: str = Field(default=None, exclude=True)
