@@ -1,16 +1,73 @@
 // src/api/bookApi.ts
+import { Author } from '@/types/author';
 import apiClient from './apiClient';
 // Import kiểu Book từ nơi bạn định nghĩa
 import type { Book } from '@/types/book'; // Giả sử bạn dùng alias @ -> src
+import type { Category } from '@/types/category';
+
+export interface GetBooksParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;  // ví dụ: 'price', 'popularity', 'sale'
+  order?: 'asc' | 'desc';
+  categoryId?: number | string;
+  authorId?: number | string;
+  rating?: number;
+  // Thêm các tham số khác nếu backend hỗ trợ
+}
+
+export interface BookListResponse {
+  items: Book[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+}
 
 // Định nghĩa các đường dẫn API (endpoint) - cần khớp với backend FastAPI của bạn
 const ENDPOINTS = {
   ON_SALE: '/books/top-discounted', // Ví dụ endpoint sách giảm giá
   FEATURED_RECOMMENDED: '/books/recommended', // Ví dụ endpoint sách nổi bật + filter
   FEATURED_POPULAR: '/books/popular',
-  // Có thể thêm endpoint lấy sách theo ID, hoặc lấy danh sách sách có phân trang/filter cho trang Shop
   // GET_BOOK_BY_ID: (id: string | number) => `/books/${id}`,
-  // GET_BOOKS: '/books',
+  CATEGORIES: '/categories', // Endpoint lấy danh sách category
+  AUTHORS: '/authors',     // Endpoint lấy danh sách author
+  BOOKS: '/books',         // Endpoint lấy danh sách sách (với filter/sort/page)
+};
+
+export const getCategories = async (): Promise<Category[]> => {
+  try {
+    const response = await apiClient.get<Category[]>(ENDPOINTS.CATEGORIES);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) console.error('Axios error fetching categories:', error.message);
+    else console.error('Unexpected error fetching categories:', error);
+    return [];
+  }
+};
+
+export const getAuthors = async (): Promise<Author[]> => {
+  try {
+    const response = await apiClient.get<Author[]>(ENDPOINTS.AUTHORS);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) console.error('Axios error fetching authors:', error.message);
+    else console.error('Unexpected error fetching authors:', error);
+    return [];
+  }
+};
+
+// --- Hàm lấy sách tổng quát ---
+export const getBooks = async (params: GetBooksParams = {}): Promise<BookListResponse> => {
+  try {
+    // Axios tự động chuyển object params thành query string
+    const response = await apiClient.get<BookListResponse>(ENDPOINTS.BOOKS, { params });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) console.error('Axios error fetching books:', error.message);
+    else console.error('Unexpected error fetching books:', error);
+    // Trả về cấu trúc mặc định khi lỗi để tránh crash component
+    return { items: [], totalItems: 0, totalPages: 1, currentPage: params.page || 1 };
+  }
 };
 
 /**
