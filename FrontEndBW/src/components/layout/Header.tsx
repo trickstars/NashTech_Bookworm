@@ -1,6 +1,10 @@
+import { useCart } from '@/contexts/CartContext';
 import { Link, NavLink } from 'react-router-dom'; // Import Link (or NavLink for active styles)
 
 const Header = () => {
+  // Lấy trực tiếp giá trị cartItemCount từ context
+  const { cartItemCount } = useCart();
+  // const cartItemCount = getCartItemCount(); // Gọi hàm để lấy số lượng
   // Helper function for NavLink className to handle active state
   const getNavLinkClass = ({ isActive }: { isActive: boolean }): string => {
     return `transition-colors hover:text-foreground/80 ${
@@ -43,7 +47,7 @@ const Header = () => {
             About
           </NavLink>
           <NavLink to="/cart" className={getNavLinkClass}>
-            Cart (0) {/* Cart count needs state management */}
+            Cart ({cartItemCount}) {/* Cart count needs state management */}
           </NavLink>
           <NavLink to="/signin" className={getNavLinkClass}>
             Sign In

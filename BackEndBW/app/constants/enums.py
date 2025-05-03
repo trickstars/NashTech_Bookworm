@@ -8,6 +8,13 @@ class SortFactor(str, Enum):
     POPULARITY = "popularity"
     PRICE = "price"
 
+class SortOrder(str, Enum):
+    """
+    Enum for sorting order.
+    """
+    ASCENDING = "asc"
+    DESCENDING = "desc"
+
 class Featured(str, Enum):
     """
     Enum for featured books.
