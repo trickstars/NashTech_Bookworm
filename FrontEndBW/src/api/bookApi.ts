@@ -6,14 +6,18 @@ import type { Book } from '@/types/book'; // Giả sử bạn dùng alias @ -> s
 import type { Category } from '@/types/category';
 
 export interface GetBooksParams {
-  page?: number;
-  limit?: number;
-  sortBy?: string;  // ví dụ: 'price', 'popularity', 'sale'
-  order?: 'asc' | 'desc';
-  categoryId?: number | string;
-  authorId?: number | string;
-  rating?: number;
-  // Thêm các tham số khác nếu backend hỗ trợ
+  // Filter options (có thể là number hoặc null)
+  category?: number | null; // Đổi từ categoryId, kiểu number | null
+  author?: number | null;   // Đổi từ authorId, kiểu number | null
+  rating?: number | null;   // Giữ nguyên, kiểu number | null
+
+  // Sort options
+  order_by?: 'sale' | 'popularity' | 'price'; // Đổi từ sortBy, dùng literal type
+  order?: 'asc' | 'desc';                             // Giữ nguyên, optional
+
+  // Pagination options
+  page?: number;           // Giữ nguyên, optional (backend có default)
+  limit?: number;          // Giữ nguyên, optional
 }
 
 export interface BookListResponse {

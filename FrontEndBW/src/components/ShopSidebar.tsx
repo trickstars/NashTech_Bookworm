@@ -12,11 +12,11 @@ import { Category } from "@/types/category";
 
 // Dữ liệu Rating tĩnh (có thể chuyển ra constants nếu muốn)
 const ratings = [
-    { id: 5, name: "5 Stars" },
-    { id: 4, name: "4 Stars" },
-    { id: 3, name: "3 Stars" },
-    { id: 2, name: "2 Stars" },
-    { id: 1, name: "1 Star" },
+    { id: 5, name: "5+ Stars" },
+    { id: 4, name: "4+ Stars" },
+    { id: 3, name: "3+ Stars" },
+    { id: 2, name: "2+ Stars" },
+    { id: 1, name: "1+ Star" },
   ];
 // --- End Sample Data ---
 // Định nghĩa kiểu cho props
@@ -48,7 +48,7 @@ interface ShopSidebarProps {
     // Hiển thị skeleton hoặc loading text nếu đang tải filter options
     if (isLoading) {
        return (
-          <aside className="lg:sticky lg:top-20 lg:h-[calc(100vh-10rem)] space-y-4">
+          <aside className="space-y-4">
               <h3 className="text-lg font-semibold mb-4">Filter By</h3>
               {/* Ví dụ Skeleton đơn giản */}
               <div className="h-8 w-full bg-muted rounded animate-pulse"></div>
@@ -59,7 +59,7 @@ interface ShopSidebarProps {
     }
   
     return (
-      <aside className="lg:sticky lg:top-20 lg:h-[calc(100vh-10rem)]">
+      <aside>
         <h3 className="text-lg font-semibold mb-4">Filter By</h3>
         <Accordion type="multiple" defaultValue={['category', 'author']} className="w-full">
   
@@ -81,7 +81,7 @@ interface ShopSidebarProps {
                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                        )}
                      >
-                       {category.name}
+                       {category.categoryName}
                      </button>
                    );
                  }) : <p className='text-sm text-muted-foreground px-2'>No categories found.</p>}
@@ -107,7 +107,7 @@ interface ShopSidebarProps {
                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                        )}
                      >
-                       {author.name}
+                       {author.authorName}
                      </button>
                    );
                  }) : <p className='text-sm text-muted-foreground px-2'>No authors found.</p>}
