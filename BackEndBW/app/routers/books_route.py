@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 # from typing import Annotated
 # from datetime import date
 
-from ..dependencies import SessionDep
+from ..dependencies.db_dep import SessionDep
 from ..models import Book, Discount
 from ..schemas.book import BookCard, BookDetail
 from ..schemas.query_params import FilterParam, OrderParam, PaginationParam

@@ -6,14 +6,14 @@ from sqlalchemy.orm import aliased
 
 from datetime import date
 
-from ..dependencies import SessionDep
+from ..dependencies.db_dep import SessionDep
 
 from ..models import Book, Category, Review, Discount, Author
 
 from ..schemas.query_params import FilterParam, OrderParam, PaginationParam
 # from ..schemas.book import BookCard
 
-from ..constants.enums import Featured, SortFactor
+from ..constants.enums import Featured, SortFactor, SortOrder
 
 async def get_books(filter_param: FilterParam, order_param: OrderParam, pagination_param: PaginationParam, session: SessionDep) -> list[any]:
     """
@@ -40,9 +40,9 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
     query = select(Book, final_price, Author.author_name).join(Discount, isouter=True).join(Author, isouter=True)
     # query = select(Book)
 
-    print("Filter prM", filter_param)
-    print("Order prM", order_param)
-    print("Pagination prM", pagination_param)
+    # print("Filter prM", filter_param)
+    # print("Order prM", order_param)
+    # print("Pagination prM", pagination_param)
 
     # Apply filters
     if filter_param:
@@ -161,7 +161,7 @@ def get_books_ordered_by(query: Subquery, orderParam: OrderParam) -> Subquery:
     elif orderParam.order_by == SortFactor.POPULARITY:
         return get_books_ordered_by_popularity(query)
     elif orderParam.order_by == SortFactor.PRICE:
-        return get_books_ordered_by_final_price(query, orderParam.asc)
+        return get_books_ordered_by_final_price(query, True if orderParam.sort_order == SortOrder.ASCENDING else False)
     else:
         raise HTTPException(status_code=400, detail="Invalid order parameter")
 
@@ -196,7 +196,7 @@ def get_books_ordered_by_sale(query: Subquery) -> Subquery:
     stmt = (
         select(book_alias, discount_value).select_from(book_alias)
         # .join(Discount, isouter=True)
-        .order_by(desc("discount_value"))
+        .order_by(desc("discount_value"), "final_price")
     ).subquery()
 
     print("This query", stmt)
@@ -215,7 +215,7 @@ def get_books_ordered_by_popularity(query: Subquery) -> Subquery:
             func.count().label("review_count"),)
         .join_from(query, Review, isouter=True)
         .group_by(*query.c)
-        .order_by(desc("review_count"))
+        .order_by(desc("review_count"), "final_price")
     ).subquery()
 
     print("This query", statement)

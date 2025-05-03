@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from ..constants.enums import SortFactor
+from ..constants.enums import SortFactor, SortOrder
 
 class FilterParam(BaseModel):
     """
@@ -14,7 +14,7 @@ class OrderParam(BaseModel):
     Query parameters for ordering data.
     """
     order_by: SortFactor | None = None
-    asc: bool = False
+    order: SortOrder = SortOrder.DESCENDING
 
 class PaginationParam(BaseModel):
     """
