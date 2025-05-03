@@ -37,11 +37,6 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
         else_=Book.book_price
     ).label("final_price")
 
-    total_books = int(session.exec(select(func.count(Book.id))).first())
-    total_pages = math.ceil(total_books / pagination_param.limit) if pagination_param else 1
-    current_page = pagination_param.page if pagination_param else 1
-    if pagination_param and pagination_param.page > total_pages:
-        raise HTTPException(status_code=400, detail="Page out of range")
 
     query = select(Book, final_price, Author.author_name).join(Discount, isouter=True).join(Author, isouter=True)
     # query = select(Book)
@@ -53,11 +48,17 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
     # Apply filters
     if filter_param:
         query = get_books_filtered(query, filter_param)
-
+        
     # Apply ordering
     if order_param.order_by:
         query = get_books_ordered_by(query, order_param)
 
+    total_books = int(session.exec(select(func.count()).select_from(query)).first())
+    total_pages = math.ceil(total_books / pagination_param.limit) if pagination_param else 1
+    current_page = pagination_param.page if pagination_param else 1
+    if pagination_param and pagination_param.page > total_pages:
+        raise HTTPException(status_code=400, detail="Page out of range")
+    
     # Apply pagination
     if pagination_param:
         query = get_book_by_pagination(query, pagination_param)
@@ -167,7 +168,7 @@ def get_books_ordered_by(query: Subquery, orderParam: OrderParam) -> Subquery:
     elif orderParam.order_by == SortFactor.POPULARITY:
         return get_books_ordered_by_popularity(query)
     elif orderParam.order_by == SortFactor.PRICE:
-        return get_books_ordered_by_final_price(query, True if orderParam.sort_order == SortOrder.ASCENDING else False)
+        return get_books_ordered_by_final_price(query, True if orderParam.order == SortOrder.ASCENDING else False)
     else:
         raise HTTPException(status_code=400, detail="Invalid order parameter")
 
