@@ -6,11 +6,11 @@ from pydantic import ValidationError
 
 from ..config import settings
 from .db_dep import SessionDep
-from ..schemas.token import TokenData
+from ..schemas.token import Token
 
 from ..models import User
 
-from ..services.auth_service import get_user_by_username
+from ..services.users_service import get_user_by_id
 
 from ..utils.security import verify_token_and_get_payload
 
@@ -27,7 +27,7 @@ async def get_current_user(
     # Hàm này sẽ raise HTTPException nếu token không hợp lệ hoặc hết hạn
     payload = verify_token_and_get_payload(token)
 
-    username: str | None = payload.get("sub")
+    user_id: str | None = payload.get("sub")
     token_type: str | None = payload.get("type")
 
     # Kiểm tra logic cụ thể cho access token SAU KHI đã xác thực cơ bản
@@ -38,9 +38,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Không cần validate TokenData nữa vì 'sub' đã được kiểm tra trong verify_token...
-
-    user = get_user_by_username(session, username=username)
+    user = get_user_by_id(session, user_id=user_id)
     if user is None:
         # User có trong token nhưng không có trong DB? -> Token không hợp lệ
         raise HTTPException(

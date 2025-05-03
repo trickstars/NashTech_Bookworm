@@ -5,6 +5,7 @@ from datetime import date, datetime
 from .schemas.author import AuthorBase
 from .schemas.category import CategoryBase
 from .schemas.book import BookBase
+from .schemas.user import UserBase
 
 # Optional field?
 class Category(CategoryBase, table=True):
@@ -56,13 +57,8 @@ class Review(SQLModel, table=True):
 
     book: Book = Relationship(back_populates="reviews")
 
-class User(SQLModel, table=True):
+class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    first_name: str = Field(max_length=50)
-    last_name: str = Field(max_length=50)
-    email: str = Field(max_length=70)
-    password: str = Field(max_length=255)
-    admin: bool = Field(default=False) # khóng set duoc default tren db ?
 
     __table_args__ = (
         CheckConstraint(

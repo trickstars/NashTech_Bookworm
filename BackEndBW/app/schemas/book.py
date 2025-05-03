@@ -22,7 +22,7 @@ class BookBase(SQLModel):
 
 class BookCard(BookBase):
     id: int
-    book_summary: str = Field(default=None, exclude=True)
+    book_summary: str = Field(default='', exclude=True)
     final_price: float
     author_name: str | None
 

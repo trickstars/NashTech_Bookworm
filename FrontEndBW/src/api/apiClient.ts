@@ -1,5 +1,5 @@
 // src/api/apiClient.ts
-import axios from 'axios';
+import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import humps from 'humps'; // Thư viện giúp chuyển đổi giữa snake_case và camelCase
 
 // Lấy base URL của API từ biến môi trường
@@ -17,54 +17,62 @@ const apiClient = axios.create({
   },
   // --- Thêm transform cho response và request ---
   // Biến đổi keys của response data từ snake_case thành camelCase
-  transformResponse: [
-    ...(axios.defaults.transformResponse as any[]), // Giữ các transform mặc định
-    (data) => humps.camelizeKeys(data), // Áp dụng camelizeKeys
-  ],
+  // transformResponse: [
+  //   ...(axios.defaults.transformResponse as any[]), // Giữ các transform mặc định
+  //   (data) => humps.camelizeKeys(data), // Áp dụng camelizeKeys
+  // ],
   // (Tùy chọn) Biến đổi keys của request data từ camelCase thành snake_case
   // Chỉ cần nếu backend yêu cầu snake_case cho request body/params
-  transformRequest: [
-    (data) => humps.decamelizeKeys(data), // Áp dụng decamelizeKeys
-    ...(axios.defaults.transformRequest as any[]), // Giữ các transform mặc định
-  ],
+  // transformRequest: [
+  //   (data) => humps.decamelizeKeys(data), // Áp dụng decamelizeKeys
+  //   ...(axios.defaults.transformRequest as any[]), // Giữ các transform mặc định
+  // ],
 });
 
 // --- Hoặc dùng Interceptor (linh hoạt hơn nếu cần xử lý phức tạp) ---
-/*
-// Response interceptor để camelize keys
+// --- Response Interceptor để camelize keys (Giữ nguyên nếu cần) ---
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Kiểm tra nếu response.data là object/array thì mới camelize
     if (response.data && typeof response.data === 'object') {
-      response.data = humps.camelizeKeys(response.data);
+      // Chỉ camelize nếu response data là object/array
+      // Cẩn thận: không camelize nếu response là Blob hoặc kiểu dữ liệu khác
+       if (!(response.data instanceof Blob)) {
+           response.data = humps.camelizeKeys(response.data);
+       }
     }
     return response;
   },
-  (error) => {
-    // Xử lý lỗi response
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// (Tùy chọn) Request interceptor để decamelize keys
+// --- Request Interceptor để decamelize keys (Cập nhật logic) ---
+// Fix lỗi formData và URLSearchParams
 apiClient.interceptors.request.use(
    (config: InternalAxiosRequestConfig) => {
        const newConfig = { ...config };
-       // Chuyển đổi params
-       if (newConfig.params) {
-           newConfig.params = humps.decamelizeKeys(newConfig.params);
-       }
-       // Chuyển đổi data trong body (POST, PUT, PATCH)
-       if (newConfig.data) {
+
+       // --- KIỂM TRA KIỂU DỮ LIỆU TRƯỚC KHI CHUYỂN ĐỔI ---
+       // Chỉ decamelize nếu data là plain object và không phải là FormData/URLSearchParams
+       if (newConfig.data && typeof newConfig.data === 'object' &&
+           !(newConfig.data instanceof FormData) &&
+           !(newConfig.data instanceof URLSearchParams) &&
+           !(newConfig.data instanceof Blob))
+       {
            newConfig.data = humps.decamelizeKeys(newConfig.data);
        }
+
+        // Cũng kiểm tra và chuyển đổi cho params nếu cần
+        if (newConfig.params && typeof newConfig.params === 'object') {
+            newConfig.params = humps.decamelizeKeys(newConfig.params);
+        }
+        // --- KẾT THÚC KIỂM TRA ---
+
        return newConfig;
    },
    (error) => {
        return Promise.reject(error);
    }
 );
-*/
 // --- ---
 
 // --- Tùy chọn: Interceptors ---
