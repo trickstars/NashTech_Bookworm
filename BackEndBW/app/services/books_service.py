@@ -5,6 +5,7 @@ from sqlalchemy.orm import aliased
 # from sqlalchemy import label
 
 from datetime import date
+import math
 
 from ..dependencies.db_dep import SessionDep
 
@@ -15,7 +16,7 @@ from ..schemas.query_params import FilterParam, OrderParam, PaginationParam
 
 from ..constants.enums import Featured, SortFactor, SortOrder
 
-async def get_books(filter_param: FilterParam, order_param: OrderParam, pagination_param: PaginationParam, session: SessionDep) -> list[any]:
+async def get_books(filter_param: FilterParam, order_param: OrderParam, pagination_param: PaginationParam, session: SessionDep):
     """
     Get books with optional filtering, ordering, and pagination.
     """
@@ -36,6 +37,11 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
         else_=Book.book_price
     ).label("final_price")
 
+    total_books = int(session.exec(select(func.count(Book.id))).first())
+    total_pages = math.ceil(total_books / pagination_param.limit) if pagination_param else 1
+    current_page = pagination_param.page if pagination_param else 1
+    if pagination_param and pagination_param.page > total_pages:
+        raise HTTPException(status_code=400, detail="Page out of range")
 
     query = select(Book, final_price, Author.author_name).join(Discount, isouter=True).join(Author, isouter=True)
     # query = select(Book)
@@ -65,10 +71,10 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
         # print("Toi day ne")
         raise HTTPException(status_code=404, detail="Resources not found")
     # print("Books", books)
-    return books
+    return books, total_books, total_pages, current_page
 
 # Special get books
-async def get_featured_books(featured_type: Featured, session: SessionDep) -> list[any]:
+async def get_featured_books(featured_type: Featured, session: SessionDep):
     """
     Get recommended books
     """
