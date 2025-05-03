@@ -7,6 +7,8 @@ import { Minus, Plus } from 'lucide-react';
 // Import API function và type mới
 import { getBookById } from '@/api/bookApi'; // Hoặc productApi
 import type { BookDetail } from '@/types/book'; // Hoặc /types
+import { useCart } from '@/contexts/CartContext'; // <-- Import useCart
+import { toast } from "sonner"; // <-- Import toast
 
 import CustomerReviewSection from '@/components/CustomerReview';
 
@@ -34,10 +36,12 @@ import CustomerReviewSection from '@/components/CustomerReview';
 // --- Định nghĩa hằng số ---
 const MIN_QUANTITY = 1;
 const MAX_QUANTITY = 8;
+const MAX_ITEM_QUANTITY = 8; // Giới hạn số lượng tối đa cho mỗi item trong giỏ
 // --- ---
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { addItem } = useCart(); // <-- Lấy hàm addItem từ context
 
   // --- State cho dữ liệu sản phẩm, loading, error ---
   const [productData, setProductData] = useState<BookDetail | null>(null);
@@ -105,6 +109,21 @@ const ProductDetailPage = () => {
     // Nếu nhập chữ hoặc ký tự khác, state quantity không đổi
  };
   // --- ---
+  // --- Handler cho nút Add to Cart ---
+  const handleAddToCart = () => {
+    if (!productData || !id) return; // Chưa có dữ liệu sản phẩm
+
+    const success = addItem(id, quantity); // Gọi hàm addItem từ context
+
+    if (success) {
+        toast.success(`${quantity} "${productData.bookTitle}" added to cart!`);
+        // Tùy chọn: Reset quantity về 1 sau khi thêm thành công
+        // setQuantity(MIN_QUANTITY);
+    } else {
+        toast.error(`Cannot add item. Quantity limit (${MAX_ITEM_QUANTITY}) would be exceeded.`);
+    }
+};
+// --- ---
 
   // --- Xử lý hiển thị Loading / Error / Not Found ---
   if (isLoading) {
@@ -239,7 +258,7 @@ const ProductDetailPage = () => {
                 </div>
 
                 {/* Add to Cart Button */}
-                <Button size="lg" className="w-full" onClick={() => console.log(`Add ${quantity} of book ${id} to cart`)}>
+                <Button size="lg" className="w-full" onClick={handleAddToCart}>
                   Add to cart
                 </Button>
              </div>
