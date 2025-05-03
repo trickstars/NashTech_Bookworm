@@ -111,14 +111,14 @@ const ProductDetailPage = () => {
   // --- ---
   // --- Handler cho nút Add to Cart ---
   const handleAddToCart = () => {
-    if (!productData || !id) return; // Chưa có dữ liệu sản phẩm
+    if (!productData) return; // Phải có productData
 
-    const success = addItem(id, quantity); // Gọi hàm addItem từ context
+    // Truyền cả productData (chứa bookDetails) và quantity
+    // Giả sử ProductDetail có các trường giống CartBookDetails
+    const success = addItem(productData, quantity);
 
     if (success) {
         toast.success(`${quantity} "${productData.bookTitle}" added to cart!`);
-        // Tùy chọn: Reset quantity về 1 sau khi thêm thành công
-        // setQuantity(MIN_QUANTITY);
     } else {
         toast.error(`Cannot add item. Quantity limit (${MAX_ITEM_QUANTITY}) would be exceeded.`);
     }

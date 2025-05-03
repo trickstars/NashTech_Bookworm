@@ -3,29 +3,49 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Minus, Plus, X } from 'lucide-react'; // Import icons
+import { useCart } from '@/contexts/CartContext'; // Import useCart
+import { Link } from 'react-router-dom'; // Import Link cho nút Place Order (ví dụ)
 
-// --- Sample Data (Thay bằng state quản lý giỏ hàng thật) ---
-const cartItems = [
-  { id: 'p1', productId: '123', title: 'Book Title Example 1', author: 'Author Name', imageUrl: '/placeholder-book.png', price: 29.99, quantity: 2, originalPrice: 49.99 },
-  { id: 'p2', productId: '456', title: 'Another Book Title Longer Example', author: 'Another Author', imageUrl: '/placeholder-book.png', price: 39.99, quantity: 1 },
-];
-// --- End Sample Data ---
+const MAX_ITEM_QUANTITY = 8;
+const MIN_QUANTITY = 1;
 
-
-const calculateSubtotal = (items: typeof cartItems) => {
-  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-};
-
-const calculateTotalItems = (items: typeof cartItems) => {
-  return items.reduce((sum, item) => sum + item.quantity, 0);
-}
+// Lấy biến môi trường và định nghĩa kích thước ảnh (có thể đặt ở constants)
+const picsumBaseUrl = import.meta.env.VITE_PICSUM_SEED_BASE_URL || 'https://picsum.photos/seed/';
+const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/placeholder-cover.png';
+const CART_IMAGE_WIDTH = 80; // Kích thước nhỏ hơn cho ảnh trong giỏ hàng
+const CART_IMAGE_HEIGHT = Math.round(CART_IMAGE_WIDTH * 1.05); // Giữ tỉ lệ
 
 const CartPage = () => {
   // TODO: Thay thế cartItems bằng state thực tế (ví dụ: từ context, Redux, Zustand...)
-  const subtotal = calculateSubtotal(cartItems);
-  const totalItemsCount = calculateTotalItems(cartItems);
+  const {
+    cartItems, // Lấy danh sách items dạng mảng
+    updateItemQuantity,
+    removeItem,
+    getCartTotal,
+    cartItemCount // Lấy số lượng item mới nhất
+   } = useCart();
+
+   const subtotal = getCartTotal();
+   const totalItemsCount = cartItemCount; // Lấy tổng số lượng
 
   // TODO: Thêm các hàm xử lý tăng/giảm số lượng, xóa sản phẩm
+  const handleQuantityChange = (productId: string | number, value: string) => {
+    if (value === '') {
+        updateItemQuantity(productId, MIN_QUANTITY); // Reset về min nếu xóa trắng
+        return;
+    }
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue)) {
+      // Hàm updateItemQuantity đã có logic clamp
+      updateItemQuantity(productId, numValue);
+    }
+  };
+
+  // Hàm xử lý lỗi ảnh chung
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    event.currentTarget.onerror = null;
+    event.currentTarget.src = fallbackImageUrl;
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,_2fr)_minmax(0,_1fr)] gap-8 xl:gap-12">
@@ -48,62 +68,110 @@ const CartPage = () => {
 
           {/* Item Rows */}
           {cartItems.length > 0 ? (
-            <div className="divide-y"> {/* Dùng divide-y để tạo đường kẻ giữa các item */}
-              {cartItems.map((item) => (
-                <div key={item.id} className="flex items-center py-4 gap-4">
-                  {/* Product Details */}
-                  <div className="flex items-center gap-3 md:gap-4 flex-[2_2_0%]"> {/* Use flex-basis */}
-                    <div className="w-16 h-20 md:w-20 md:h-24 bg-secondary rounded overflow-hidden flex-shrink-0">
-                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover"/>
+            // Sử dụng divide-y để tạo đường kẻ giữa các item
+            <div className="divide-y">
+              {cartItems.map((item) => {
+                // Tạo URL ảnh Picsum cho item này
+                const bookSeed = item.bookDetails.bookCoverPhoto;
+                const imageUrl = `${picsumBaseUrl}${bookSeed}/${CART_IMAGE_WIDTH}/${CART_IMAGE_HEIGHT}`;
+                // --- URL chi tiết sản phẩm ---
+                const productUrl = `/product/${item.bookDetails.id}`;
+                // --- ---
+
+                return (
+                  // Mỗi item là một flex container
+                  <div key={item.bookDetails.id} className="flex items-center py-4 gap-4">
+
+                    {/* Cột Product Details */}
+                    <div className="flex items-center gap-3 md:gap-4 flex-[2_2_0%]">
+                      <Link to={productUrl} aria-label={`View ${item.bookDetails.bookTitle}`}>
+                        <div className="w-16 h-20 md:w-20 md:h-[84px] bg-secondary rounded overflow-hidden flex-shrink-0">
+                          <img
+                            src={imageUrl || fallbackImageUrl}
+                            alt={item.bookDetails.bookTitle}
+                            className="w-full h-full object-cover"
+                            onError={handleImageError}
+                            loading="lazy"
+                          />
+                        </div>
+                      </Link>
+                      <div className="flex-grow">
+                        <p className="font-medium line-clamp-2">{item.bookDetails.bookTitle}</p>
+                        <p className="text-xs text-muted-foreground">{item.bookDetails.authorName}</p>
+                      </div>
                     </div>
-                    <div className="flex-grow">
-                      <p className="font-medium line-clamp-2">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.author}</p>
+
+                    {/* Cột Price */}
+                    <div className="text-right flex-[1_1_0%]">
+                      <p className="font-medium">${item.bookDetails.finalPrice.toFixed(2)}</p>
+                      {(item.bookDetails.bookPrice && item.bookDetails.bookPrice !== item.bookDetails.finalPrice) && (
+                        <p className="text-xs text-muted-foreground line-through">${item.bookDetails.bookPrice.toFixed(2)}</p>
+                      )}
+                    </div>
+
+                    {/* Cột Quantity */}
+                    <div className="flex justify-center flex-[1_1_0%] px-2">
+                      <div className="flex items-center border rounded-md">
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-8 w-8 rounded-r-none"
+                          onClick={() => {
+                            if (item.quantity <= MIN_QUANTITY) {
+                                // Nếu số lượng là 1 (hoặc nhỏ hơn), gọi hàm xóa
+                                removeItem(item.bookDetails.id);
+                            } else {
+                                // Nếu số lượng > 1, gọi hàm giảm số lượng
+                                updateItemQuantity(item.bookDetails.id, item.quantity - 1);
+                            }
+                        }}
+                          // disabled={item.quantity <= MIN_QUANTITY}
+                          aria-label={`Decrease quantity for ${item.bookDetails.bookTitle}`}
+                        >
+                          <Minus className="h-3 w-3"/>
+                        </Button>
+                        <Input
+                           type="number"
+                           min={MIN_QUANTITY}
+                           max={MAX_ITEM_QUANTITY}
+                           value={item.quantity}
+                           onChange={(e) => handleQuantityChange(item.bookDetails.id, e.target.value)}
+                           aria-label={`Quantity for ${item.bookDetails.bookTitle}`}
+                           className="h-8 w-10 text-center border-y-0 border-x focus-visible:ring-0 text-sm p-0"
+                        />
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-8 w-8 rounded-l-none"
+                          onClick={() => updateItemQuantity(item.bookDetails.id, item.quantity + 1)}
+                          disabled={item.quantity >= MAX_ITEM_QUANTITY}
+                          aria-label={`Increase quantity for ${item.bookDetails.bookTitle}`}
+                        >
+                          <Plus className="h-3 w-3"/>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Cột Total Price */}
+                    <div className="font-medium text-right flex-[1_1_0%]">
+                      ${(item.bookDetails.finalPrice * item.quantity).toFixed(2)}
+                    </div>
+
+                     {/* Nút Remove */}
+                    <div className="w-8 flex-shrink-0 text-right">
+                       <Button
+                         variant="ghost" size="icon"
+                         className="text-muted-foreground hover:text-destructive h-8 w-8"
+                         onClick={() => removeItem(item.bookDetails.id)}
+                         aria-label={`Remove ${item.bookDetails.bookTitle}`}
+                       >
+                           <X className="h-4 w-4" />
+                       </Button>
                     </div>
                   </div>
-
-                  {/* Price */}
-                  <div className="text-right flex-[1_1_0%]"> {/* Use flex-basis */}
-                    <p className="font-medium">${item.price.toFixed(2)}</p>
-                    {item.originalPrice && (
-                      <p className="text-xs text-muted-foreground line-through">${item.originalPrice.toFixed(2)}</p>
-                    )}
-                  </div>
-
-                  {/* Quantity */}
-                  <div className="flex justify-center flex-[1_1_0%] px-2"> {/* Use flex-basis */}
-                    <div className="flex items-center border rounded-md">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-r-none" disabled={item.quantity <= 1}>
-                        <Minus className="h-3 w-3"/>
-                      </Button>
-                      <Input
-                         type="number"
-                         min="1"
-                         defaultValue={item.quantity}
-                         className="h-8 w-10 text-center border-y-0 border-x focus-visible:ring-0 text-sm p-0"
-                         readOnly // Hoặc thêm onChange handler
-                      />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-l-none">
-                        <Plus className="h-3 w-3"/>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Total Price */}
-                  <div className="font-medium text-right flex-[1_1_0%]"> {/* Use flex-basis */}
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </div>
-
-                   {/* Remove Button */}
-                  <div className="w-8 flex-shrink-0 text-right">
-                     <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8">
-                         <X className="h-4 w-4" />
-                     </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
+             // Thông báo khi giỏ hàng rỗng
             <p className="text-muted-foreground py-16 text-center">Your cart is empty.</p>
           )}
         </div>
@@ -117,15 +185,19 @@ const CartPage = () => {
               <CardTitle>Cart Totals</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+               {/* Có thể thêm Subtotal, Tax, Shipping ở đây */}
                <Separator />
                <div className="flex justify-between items-center font-semibold text-lg">
                   <span>Total</span>
+                  {/* Lấy tổng tiền từ context */}
                   <span>${subtotal.toFixed(2)}</span>
                </div>
             </CardContent>
             <CardFooter>
-              <Button size="lg" className="w-full">
-                Place order
+               {/* Nút Place order có thể là Link hoặc Button tùy logic */}
+              <Button size="lg" className="w-full" >
+                 {/* <Link to="/checkout"> Place order </Link> */}
+                 Place order
               </Button>
             </CardFooter>
           </Card>
