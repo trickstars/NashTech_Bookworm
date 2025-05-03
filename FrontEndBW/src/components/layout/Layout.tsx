@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'; // Import Outlet
 import Header from './Header';       // Ensure path is correct
 import Footer from './Footer';       // Ensure path is correct
+import { Toaster } from '@/components/ui/sonner'; // Ensure path is correct
 
 const Layout = () => {
   return (
@@ -11,6 +12,7 @@ const Layout = () => {
         <Outlet /> {/* Renders the matched child route component */}
       </main>
       <Footer />
+      <Toaster richColors position="top-right" /> {/* Thêm Toaster ở đây */}
     </div>
   );
 };

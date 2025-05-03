@@ -5,17 +5,18 @@ from sqlalchemy.orm import aliased
 # from sqlalchemy import label
 
 from datetime import date
+import math
 
-from ..dependencies import SessionDep
+from ..dependencies.db_dep import SessionDep
 
 from ..models import Book, Category, Review, Discount, Author
 
 from ..schemas.query_params import FilterParam, OrderParam, PaginationParam
 # from ..schemas.book import BookCard
 
-from ..constants.enums import Featured, SortFactor
+from ..constants.enums import Featured, SortFactor, SortOrder
 
-async def get_books(filter_param: FilterParam, order_param: OrderParam, pagination_param: PaginationParam, session: SessionDep) -> list[any]:
+async def get_books(filter_param: FilterParam, order_param: OrderParam, pagination_param: PaginationParam, session: SessionDep):
     """
     Get books with optional filtering, ordering, and pagination.
     """
@@ -40,18 +41,24 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
     query = select(Book, final_price, Author.author_name).join(Discount, isouter=True).join(Author, isouter=True)
     # query = select(Book)
 
-    print("Filter prM", filter_param)
-    print("Order prM", order_param)
-    print("Pagination prM", pagination_param)
+    # print("Filter prM", filter_param)
+    # print("Order prM", order_param)
+    # print("Pagination prM", pagination_param)
 
     # Apply filters
     if filter_param:
         query = get_books_filtered(query, filter_param)
-
+        
     # Apply ordering
     if order_param.order_by:
         query = get_books_ordered_by(query, order_param)
 
+    total_books = int(session.exec(select(func.count()).select_from(query)).first())
+    total_pages = math.ceil(total_books / pagination_param.limit) if pagination_param else 1
+    current_page = pagination_param.page if pagination_param else 1
+    if pagination_param and pagination_param.page > total_pages:
+        raise HTTPException(status_code=400, detail="Page out of range")
+    
     # Apply pagination
     if pagination_param:
         query = get_book_by_pagination(query, pagination_param)
@@ -65,10 +72,10 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
         # print("Toi day ne")
         raise HTTPException(status_code=404, detail="Resources not found")
     # print("Books", books)
-    return books
+    return books, total_books, total_pages, current_page
 
 # Special get books
-async def get_featured_books(featured_type: Featured, session: SessionDep) -> list[any]:
+async def get_featured_books(featured_type: Featured, session: SessionDep):
     """
     Get recommended books
     """
@@ -161,7 +168,7 @@ def get_books_ordered_by(query: Subquery, orderParam: OrderParam) -> Subquery:
     elif orderParam.order_by == SortFactor.POPULARITY:
         return get_books_ordered_by_popularity(query)
     elif orderParam.order_by == SortFactor.PRICE:
-        return get_books_ordered_by_final_price(query, orderParam.asc)
+        return get_books_ordered_by_final_price(query, True if orderParam.order == SortOrder.ASCENDING else False)
     else:
         raise HTTPException(status_code=400, detail="Invalid order parameter")
 
@@ -196,7 +203,7 @@ def get_books_ordered_by_sale(query: Subquery) -> Subquery:
     stmt = (
         select(book_alias, discount_value).select_from(book_alias)
         # .join(Discount, isouter=True)
-        .order_by(desc("discount_value"))
+        .order_by(desc("discount_value"), "final_price")
     ).subquery()
 
     print("This query", stmt)
@@ -215,7 +222,7 @@ def get_books_ordered_by_popularity(query: Subquery) -> Subquery:
             func.count().label("review_count"),)
         .join_from(query, Review, isouter=True)
         .group_by(*query.c)
-        .order_by(desc("review_count"))
+        .order_by(desc("review_count"), "final_price")
     ).subquery()
 
     print("This query", statement)
