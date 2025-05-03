@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field, CheckConstraint
+from pydantic import BaseModel
 
 class BookBase(SQLModel):
     book_title: str = Field(max_length=255)
@@ -30,3 +31,10 @@ class BookDetail(BookBase):
     final_price: float
     author_name: str | None
     category_name: str | None
+
+# Schema cho cấu trúc response của API lấy danh sách sách
+class BookListResponse(BaseModel):
+    items: list[BookCard]       # Danh sách các sách theo schema BookRead
+    total_items: int          # Tổng số sách (trước khi phân trang)
+    total_pages: int          # Tổng số trang
+    current_page: int         # Trang hiện tại
