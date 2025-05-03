@@ -12,6 +12,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 // Định nghĩa kiểu cho sách (nên định nghĩa ở một nơi dùng chung sau này)
 import { Book } from "@/types/book"; // Đảm bảo đường dẫn đúng
 import { getOnSaleBooks } from "@/api/bookApi"; // Đảm bảo đường dẫn đúng
+import { useNavigate } from 'react-router-dom';
 
 const OnSaleCarousel = () => {
   const [api, setApi] = useState<CarouselApi>();
@@ -23,6 +24,8 @@ const OnSaleCarousel = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // --- ---
+
+  const navigate = useNavigate(); // <-- Khởi tạo hook navigate
 
   // --- useEffect để gọi API khi component mount ---
   useEffect(() => {
@@ -64,13 +67,19 @@ const OnSaleCarousel = () => {
   const scrollPrev = useCallback(() => { api?.scrollPrev(); }, [api]);
   const scrollNext = useCallback(() => { api?.scrollNext(); }, [api]);
 
+  // --- Hàm xử lý khi click View All ---
+  const handleViewAllClick = () => {
+    navigate('/shop'); // <-- Điều hướng đến /shop
+  };
+  // --- ---
+
   return (
     <section aria-labelledby="on-sale-heading">
       <div className="flex justify-between items-center mb-4">
         <h2 id="on-sale-heading" className="text-2xl font-semibold tracking-tight">
           On Sale
         </h2>
-        <Button variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/80">
+        <Button variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:cursor-pointer" onClick={handleViewAllClick}>
             View All <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
       </div>

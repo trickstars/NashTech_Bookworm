@@ -8,6 +8,7 @@ import {
   } from "@/components/ui/card"; // Giả sử bạn cấu hình alias @ là src/
   import { cn } from "@/lib/utils"; // Import hàm tiện ích cn từ shadcn
   import type { Book } from '@/types/book';
+import { Link } from "react-router-dom";
   
   interface BookCardProps extends Book {
     className?: string;
@@ -46,21 +47,26 @@ const IMAGE_HEIGHT = 315; // Giữ tỉ lệ 1:1.05 cho ảnh sách
     event.currentTarget.src = fallbackImageUrl;
     // --- ---
   };
+
+  // URL chi tiết sản phẩm
+  const productUrl = `/product/${id}`;
   // --- ---
 
     return (
       <Card className={cn("shrink-0 rounded-md gap-2 pb-1", className)}> {/* Width cố định và không co lại cho list ngang */}
         <CardHeader className="relative w-full aspect-[1/1.05] bg-secondary overflow-hidden"> {/* Tỷ lệ vuông cho ảnh */}
           {/* Placeholder cho ảnh sách */}
-          <div className="w-full h-full bg-secondary flex items-center justify-center">
-            <img src={actualImageUrl || fallbackImageUrl} // Đường dẫn ảnh sách hoặc ảnh placeholder
-            alt={bookTitle} 
-            className="absolute inset-0 w-full h-full object-cover" 
-            loading="lazy"
-            onError={handleImageError}/>
-            {/* Hoặc hiển thị chữ nếu không có ảnh */}
-            {/* <span className="text-muted-foreground text-sm">Book Image</span> */}
-          </div>
+          <Link to={productUrl} aria-label={`View details for ${bookTitle}`} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <div className="w-full h-full bg-secondary flex items-center justify-center group">
+              <img src={actualImageUrl || fallbackImageUrl} // Đường dẫn ảnh sách hoặc ảnh placeholder
+              alt={bookTitle} 
+              className="absolute inset-0 w-full h-full object-cover" 
+              loading="lazy"
+              onError={handleImageError}/>
+              {/* Hoặc hiển thị chữ nếu không có ảnh */}
+              {/* <span className="text-muted-foreground text-sm">Book Image</span> */}
+            </div>
+          </Link>
         </CardHeader>
         <CardContent className="p-2 px-5 pb-5 bg-card flex-grow min-h-0"> {/* Đảm bảo nội dung không vượt quá chiều cao */}
           <CardTitle className="text-lg font-semibold line-clamp-1" title={bookTitle}>
