@@ -7,3 +7,8 @@ export interface Book {
   finalPrice: number;     // từ final_price (giá bán)
   bookPrice: number;      // từ book_price (giá gốc)
 }
+
+export interface BookDetail extends Book {
+  categoryName: string; // từ category_name
+  bookSummary: string; // từ book_summary
+}

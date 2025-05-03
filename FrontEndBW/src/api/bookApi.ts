@@ -2,7 +2,7 @@
 import { Author } from '@/types/author';
 import apiClient from './apiClient';
 // Import kiểu Book từ nơi bạn định nghĩa
-import type { Book } from '@/types/book'; // Giả sử bạn dùng alias @ -> src
+import type { Book, BookDetail } from '@/types/book'; // Giả sử bạn dùng alias @ -> src
 import type { Category } from '@/types/category';
 
 export interface GetBooksParams {
@@ -32,10 +32,10 @@ const ENDPOINTS = {
   ON_SALE: '/books/top-discounted', // Ví dụ endpoint sách giảm giá
   FEATURED_RECOMMENDED: '/books/recommended', // Ví dụ endpoint sách nổi bật + filter
   FEATURED_POPULAR: '/books/popular',
-  // GET_BOOK_BY_ID: (id: string | number) => `/books/${id}`,
   CATEGORIES: '/categories', // Endpoint lấy danh sách category
   AUTHORS: '/authors',     // Endpoint lấy danh sách author
   BOOKS: '/books',         // Endpoint lấy danh sách sách (với filter/sort/page)
+  GET_BOOK_BY_ID: (id: string | number) => `/books/${id}`, // Endpoint lấy sách theo ID
 };
 
 export const getCategories = async (): Promise<Category[]> => {
@@ -131,44 +131,32 @@ export const getFeaturedPopularBooks = async (): Promise<Book[]> => {
   }
 };
 
-// --- Ví dụ cho hàm lấy sách có phân trang/filter cho trang Shop sau này ---
-/*
-import type { AxiosRequestConfig } from 'axios';
-
-export interface BookListResponse {
-  items: Book[];
-  totalItems: number;
-  totalPages: number;
-  currentPage: number;
-}
-
-export interface GetBooksParams {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  order?: 'asc' | 'desc';
-  // Thêm các tham số filter khác nếu cần
-  category?: string;
-  author?: string;
-}
-
-export const getBooks = async (params: GetBooksParams = {}): Promise<BookListResponse> => {
+export const getBookById = async (id: string | number): Promise<BookDetail | null> => {
+  // Không fetch nếu không có ID hợp lệ
+  if (!id || id === 'undefined') {
+      console.warn("getBookById called with invalid ID:", id);
+      return null;
+  }
   try {
-    // Chuyển đổi params thành query string nếu cần gửi theo cách đó
-    const config: AxiosRequestConfig = { params };
-    const response = await apiClient.get<BookListResponse>(ENDPOINTS.GET_BOOKS, config);
+    // apiClient sẽ tự động chuyển key trả về thành camelCase
+    const response = await apiClient.get<BookDetail>(ENDPOINTS.GET_BOOK_BY_ID(id));
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error('Axios error fetching books:', error.message, error.response?.data);
+      console.error(`Axios error fetching book ${id}:`, error.message, error.response?.status);
+      // Trả về null nếu là lỗi 404 Not Found
+      if (error.response?.status === 404) {
+        return null;
+      }
+      // Có thể throw lỗi khác để component xử lý
+      throw new Error(`Failed to fetch book ${id}: ${error.message}`);
     } else {
-      console.error('Unexpected error fetching books:', error);
+      console.error(`Unexpected error fetching book ${id}:`, error);
+      throw new Error(`An unexpected error occurred while fetching book ${id}`);
     }
-    // Trả về cấu trúc dữ liệu mặc định khi lỗi
-    return { items: [], totalItems: 0, totalPages: 1, currentPage: 1 };
+    // return null; // Hoặc luôn trả về null khi lỗi
   }
 };
-*/
 
 // Import axios để dùng isAxiosError
 import axios from 'axios';
