@@ -59,8 +59,8 @@ const Header = () => {
         }
         // Không cần xử lý lỗi ở đây nữa vì hàm login đã throw error
     } catch (error: any) {
-         setLoginError(error.message || "An unknown error occurred.");
-        //  toast.error(error.message || "Login failed."); // Hiển thị toast lỗi
+         setLoginError(error.message || "Login failed. Please check your credentials.");
+         toast.error(error.message || "Login failed."); // Hiển thị toast lỗi
     } finally {
          setIsLoggingIn(false);
     }
@@ -164,7 +164,7 @@ const Header = () => {
                         required
                         disabled={isLoggingIn}
                         className="col-span-3"
-                      />
+                        />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="login-password" className="text-right">Password</Label>
@@ -176,10 +176,12 @@ const Header = () => {
                         required
                         disabled={isLoggingIn}
                         className="col-span-3"
-                      />
+                        />
                     </div>
                     {loginError && (
-                        <p className="text-sm text-destructive text-center col-span-4">{loginError}</p>
+                        // < className='grid grid-cols-4 items-center gap-4'>
+                          <p className="text-sm text-destructive text-left">{loginError}</p>
+                        
                     )}
                   </div>
                   <DialogFooter>
