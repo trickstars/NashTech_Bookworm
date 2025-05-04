@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  // DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -43,6 +43,38 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = ITEMS_PER_PAGE_OPTIONS[1]; // Ví dụ: 20
 const DEFAULT_SORT_OPTION = SORT_OPTIONS[0]; // popularity.desc
 // --- ---
+// Hàm helper tạo dãy số trang (logic đơn giản: hiện tối đa 3 số quanh trang hiện tại)
+const generatePageNumbers = (currentPage: number, totalPages: number, maxVisible: number = 3): (number | '...')[] => {
+  if (totalPages <= maxVisible + 2) { // Nếu tổng số trang ít thì hiện hết
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pages: (number | '...')[] = [];
+  const startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  const endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+  if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) {
+          pages.push('...');
+      }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+  }
+
+  if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+          pages.push('...');
+      }
+      pages.push(totalPages);
+  }
+
+  // Giới hạn lại nếu logic trên sinh ra nhiều hơn maxVisible + 2 dots + first/last (cần tinh chỉnh thêm nếu muốn chặt chẽ)
+  // Logic trên là ví dụ cơ bản, có thể cần hoàn thiện hơn cho mọi trường hợp
+  return pages;
+};
 
 // --- Hàm Helper đọc và parse query param ---
 const getQueryParamAsNumber = (param: string | null, defaultValue: number): number => {
@@ -255,135 +287,182 @@ const ShopPage = () => {
   const currentSortLabel = SORT_OPTIONS.find(opt => opt.value === currentSortValue)?.label || 'Sort by...';
   const currentLimitLabel = `Show ${limit}`;
 
+  // --- Tạo mảng các trang cần hiển thị ---
+  const pageNumbers = useMemo(() => generatePageNumbers(currentPage, totalPages, 3), [currentPage, totalPages]);
+
+
   return (
     // Bố cục 2 cột: Sidebar trái, Nội dung chính phải
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8"> {/* Tăng độ rộng sidebar */}
-      {/* Cột Sidebar */}
-      <div>
-        <ShopSidebar 
-        categories={categories}
-        authors={authors}
-        activeCategory={activeCategory}
-        activeAuthor={activeAuthor}
-        activeRating={activeRating}
-        onFilterChange={handleFilterChange}
-        isLoading={isLoadingFilters} // Truyền trạng thái loading filter
-        />
-        {/* Hiển thị lỗi nếu không tải được filter */}
-        {filterError && !isLoadingFilters && <p className="text-xs text-destructive mt-2">{filterError}</p>}
+    <div>
+      <div className='mb-6 pb-4 border-b'>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Books <span className="text-base font-normal text-muted-foreground ml-1">{filterText}</span>
+        </h2>
       </div>
 
-      {/* Cột Nội dung chính */}
-      <div className="space-y-6">
-        {/* --- Top Bar: Title, Info, Controls --- */}
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-          {/* Left side: Title and Filter info */}
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Books <span className="text-base font-normal text-muted-foreground ml-1">{filterText}</span>
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {!isLoadingBooks && (totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} books` : 'No books found matching your criteria.')}
-              {isLoadingBooks && <span className='animate-pulse'>Loading...</span>}
-            </p>
-          </div>
-
-          {/* Right side: Sort and Show dropdowns */}
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            {/* Sort Dropdown */}
-            <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                 <Button variant="outline" className="flex items-center gap-1">
-                   {currentSortLabel} <ChevronDown className="h-4 w-4" />
-                 </Button>
-               </DropdownMenuTrigger>
-               <DropdownMenuContent align="end">
-                 <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-                 <DropdownMenuSeparator />
-                 {/* value giờ là "orderBy.orderDir" */}
-                 <DropdownMenuRadioGroup value={currentSortValue} onValueChange={handleSortChange}>
-                   {SORT_OPTIONS.map(opt => (
-                     <DropdownMenuRadioItem key={opt.value} value={opt.value}>{opt.label}</DropdownMenuRadioItem>
-                   ))}
-                 </DropdownMenuRadioGroup>
-               </DropdownMenuContent>
-             </DropdownMenu>
-
-            {/* Show Dropdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8"> {/* Tăng độ rộng sidebar */}
+        {/* Cột Sidebar */}
+        <div>
+          <ShopSidebar 
+          categories={categories}
+          authors={authors}
+          activeCategory={activeCategory}
+          activeAuthor={activeAuthor}
+          activeRating={activeRating}
+          onFilterChange={handleFilterChange}
+          isLoading={isLoadingFilters} // Truyền trạng thái loading filter
+          />
+          {/* Hiển thị lỗi nếu không tải được filter */}
+          {filterError && !isLoadingFilters && <p className="text-xs text-destructive mt-2">{filterError}</p>}
+        </div>
+  
+        {/* Cột Nội dung chính */}
+        <div className="space-y-6">
+          {/* --- Top Bar: Title, Info, Controls --- */}
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            {/* Left side: Title and Filter info */}
+            <div>
+              {/* <h2 className="text-2xl font-semibold tracking-tight">
+                Books <span className="text-base font-normal text-muted-foreground ml-1">{filterText}</span>
+              </h2> */}
+              <p className="text-sm text-muted-foreground mt-1">
+                {!isLoadingBooks && (totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} books` : 'No books found matching your criteria.')}
+                {isLoadingBooks && <span className='animate-pulse'>Loading...</span>}
+              </p>
+            </div>
+  
+            {/* Right side: Sort and Show dropdowns */}
+            <div className="flex items-center space-x-2 shrink-0">
+              {/* Sort Dropdown */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-1">
-                     {currentLimitLabel} <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                   <DropdownMenuLabel>Items per page</DropdownMenuLabel>
-                   <DropdownMenuSeparator />
-                   <DropdownMenuRadioGroup value={String(limit)} onValueChange={handleLimitChange}>
-                     {ITEMS_PER_PAGE_OPTIONS.map(opt => (
-                        <DropdownMenuRadioItem key={opt} value={String(opt)}>Show {opt}</DropdownMenuRadioItem>
+                 <DropdownMenuTrigger asChild>
+                   <Button variant="outline" className="flex items-center gap-1">
+                     {currentSortLabel} <ChevronDown className="h-4 w-4" />
+                   </Button>
+                 </DropdownMenuTrigger>
+                 <DropdownMenuContent align="end">
+                   {/* <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+                   <DropdownMenuSeparator /> */}
+                   {/* value giờ là "orderBy.orderDir" */}
+                   <DropdownMenuRadioGroup value={currentSortValue} onValueChange={handleSortChange}>
+                     {SORT_OPTIONS.map(opt => (
+                       <DropdownMenuRadioItem 
+                        key={opt.value} 
+                        value={opt.value}
+                        className='[&>span]:hidden'
+                      >
+                          {opt.label}
+                        </DropdownMenuRadioItem>
                      ))}
                    </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                 </DropdownMenuContent>
+               </DropdownMenu>
+  
+              {/* Show Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-1">
+                       {currentLimitLabel} <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                     {/* <DropdownMenuLabel>Items per page</DropdownMenuLabel>
+                     <DropdownMenuSeparator /> */}
+                     <DropdownMenuRadioGroup value={String(limit)} onValueChange={handleLimitChange}>
+                        {ITEMS_PER_PAGE_OPTIONS.map(opt => (
+                          <DropdownMenuRadioItem
+                              key={opt}
+                              value={String(opt)}
+                              className="[&>span]:hidden" // Ẩn indicator
+                          >
+                              Show {opt}
+                          </DropdownMenuRadioItem>
+                        ))}
+                     </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
           </div>
-        </div>
-
-        {/* --- Book Grid --- */}
-        {isLoadingBooks ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-             {Array.from({ length: limit }).map((_, index) => (
-                <div key={`skeleton-${index}`} className="border rounded-md p-2 space-y-2 bg-card animate-pulse">
-                    <div className="aspect-[4/5] bg-muted rounded-t-md"></div>
-                    <div className="h-5 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
-                    <div className="h-5 bg-muted rounded w-1/3 mt-2"></div>
-                </div>
-             ))}
-          </div>
-        ) : error ? (
-          <p className="text-destructive text-center py-10">{error}</p>
-        ) : books.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {books.map((book) => (
-              <BookCard key={book.id} {...book} className="w-full" />
-            ))}
-          </div>
-        ) : (
-           <p className="text-muted-foreground text-center py-16">No books match your current filters.</p>
-        )}
-
-
-        {/* --- Pagination --- */}
-        {!isLoadingBooks && totalItems > 0 && totalPages > 1 && (
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={(e) => { e.preventDefault(); handlePageChange(currentPage - 1); }}
-                  aria-disabled={currentPage <= 1}
-                  tabIndex={currentPage <= 1 ? -1 : undefined}
-                  className={cn(currentPage <= 1 ? "pointer-events-none opacity-50" : undefined, "cursor-pointer")} // Thêm cursor-pointer
-                />
-              </PaginationItem>
-              {/* Cần logic phức tạp hơn để render số trang ở giữa */}
-              <PaginationItem>
-                 <span className="px-4 py-2 text-sm">Page {currentPage} of {totalPages}</span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  onClick={(e) => { e.preventDefault(); handlePageChange(currentPage + 1); }}
-                  aria-disabled={currentPage >= totalPages}
-                  tabIndex={currentPage >= totalPages ? -1 : undefined}
-                  className={cn(currentPage >= totalPages ? "pointer-events-none opacity-50" : undefined, "cursor-pointer")} // Thêm cursor-pointer
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
-
-      </div> {/* End Main Content Column */}
-    </div> // End Grid Layout
+  
+          {/* --- Book Grid --- */}
+          {isLoadingBooks ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+               {Array.from({ length: limit }).map((_, index) => (
+                  <div key={`skeleton-${index}`} className="border rounded-md p-2 space-y-2 bg-card animate-pulse">
+                      <div className="aspect-[4/5] bg-muted rounded-t-md"></div>
+                      <div className="h-5 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                      <div className="h-5 bg-muted rounded w-1/3 mt-2"></div>
+                  </div>
+               ))}
+            </div>
+          ) : error ? (
+            <p className="text-destructive text-center py-10">{error}</p>
+          ) : books.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {books.map((book) => (
+                <BookCard key={book.id} {...book} className="w-full" />
+              ))}
+            </div>
+          ) : (
+             <p className="text-muted-foreground text-center py-16">No books match your current filters.</p>
+          )}
+  
+  
+          {/* --- Pagination --- */}
+          {!isLoadingBooks && totalItems > 0 && totalPages > 1 && (
+            <div className='pt-6 text-center'>
+              <Pagination className="inline-flex">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={(e) => { e.preventDefault(); handlePageChange(currentPage - 1); }}
+                      aria-disabled={currentPage <= 1}
+                      tabIndex={currentPage <= 1 ? -1 : undefined}
+                      className={cn(currentPage <= 1 ? "pointer-events-none opacity-50" : undefined, "cursor-pointer")} // Thêm cursor-pointer
+                    />
+                  </PaginationItem>
+                  {/* Cần logic phức tạp hơn để render số trang ở giữa */}
+                  {/* <PaginationItem>
+                     <span className="px-4 py-2 text-sm">Page {currentPage} of {totalPages}</span>
+                  </PaginationItem> */}
+                  {/* --- Hiển thị các số trang --- */}
+                  {pageNumbers.map((page, index) => (
+                      <PaginationItem key={index}>
+                          {page === '...' ? (
+                              <PaginationEllipsis />
+                          ) : (
+                              <PaginationLink
+                                  href="#" // Hoặc tạo URL nếu muốn
+                                  onClick={(e) => { e.preventDefault(); handlePageChange(page); }}
+                                  isActive={currentPage === page}
+                                  className="cursor-pointer"
+                              >
+                                  {page}
+                              </PaginationLink>
+                          )}
+                      </PaginationItem>
+                  ))}
+                  {/* --- --- */}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={(e) => { e.preventDefault(); handlePageChange(currentPage + 1); }}
+                      aria-disabled={currentPage >= totalPages}
+                      tabIndex={currentPage >= totalPages ? -1 : undefined}
+                      className={cn(currentPage >= totalPages ? "pointer-events-none opacity-50" : undefined, "cursor-pointer")} // Thêm cursor-pointer
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+              <p className="text-xs text-muted-foreground mt-2">
+                  Page {currentPage} of {totalPages}
+              </p>
+            </div>
+          )}
+  
+        </div> {/* End Main Content Column */}
+      </div>
+    </div>
   );
 };
 

@@ -1,13 +1,21 @@
+// --- Đọc URL logo từ biến môi trường ---
+const logoUrl = import.meta.env.VITE_APP_LOGO_URL || '/logo.svg'; // Có giá trị dự phòng
+// --- ---
+
 const Footer = () => {
   return (
     <footer className="border-t mt-16 py-10 bg-muted/40"> {/* Increased top margin and padding */}
       <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-8"> {/* Added justify-between and gap */}
         {/* Logo & Info Block */}
         <div className="flex items-center sm:items-start space-x-4">
-           {/* Placeholder Logo */}
-           <div className="w-16 h-16 bg-gray-300 flex items-center justify-center text-xs text-gray-500 flex-shrink-0"> {/* Added flex-shrink-0 */}
-             64X64
-           </div>
+            {/* --- THAY THẾ DIV BẰNG IMG --- */}
+           {/* Thay div placeholder bằng thẻ img */}
+           <img
+               src={logoUrl} // <-- Sử dụng biến môi trường
+               alt="Bookworm Footer Logo"
+               className="w-16 h-16 object-contain flex-shrink-0" // Giữ kích thước hoặc điều chỉnh, thêm object-contain
+            />
+           {/* --- KẾT THÚC THAY THẾ --- */}
            {/* Info */}
            <div className="text-left"> {/* Ensured text-left */}
              <p className="font-semibold text-lg">BOOKWORM</p> {/* Slightly larger font */}

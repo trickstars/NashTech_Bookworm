@@ -28,6 +28,10 @@ import {
 } from "@/components/ui/dropdown-menu"; // Cho menu user
 import ToastWithCountdown from '../common/ToastWithCountDown';
 
+// --- Đọc URL logo từ biến môi trường ---
+const logoUrl = import.meta.env.VITE_APP_LOGO_URL || '/logo.svg'; // Có giá trị dự phòng
+// --- ---
+
 const Header = () => {
   // Lấy trực tiếp giá trị cartItemCount từ context
   const { cartItemCount } = useCart();
@@ -90,7 +94,7 @@ const Header = () => {
             // --- IMPORTANT ---
             // Replace '/logo.svg' with the actual path to your logo image
             // If your logo is in the 'public' folder, '/logo.svg' or '/logo.png' should work.
-            src="/logo.svg"
+            src={logoUrl}
             alt="Bookworm Logo"
             // Adjust size (h-7 w-7) and margin (mr-2) as needed
             className="h-8 w-8 mr-2"
