@@ -17,7 +17,7 @@ const MIN_QUANTITY = 1;
 
 // Lấy biến môi trường và định nghĩa kích thước ảnh (có thể đặt ở constants)
 const picsumBaseUrl = import.meta.env.VITE_PICSUM_SEED_BASE_URL || 'https://picsum.photos/seed/';
-const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/placeholder-cover.png';
+const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/images/fallback_book.png';
 const CART_IMAGE_WIDTH = 80; // Kích thước nhỏ hơn cho ảnh trong giỏ hàng
 const CART_IMAGE_HEIGHT = Math.round(CART_IMAGE_WIDTH * 1.05); // Giữ tỉ lệ
 
@@ -55,8 +55,10 @@ const CartPage = () => {
 
   // Hàm xử lý lỗi ảnh chung
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    event.currentTarget.onerror = null;
-    event.currentTarget.src = fallbackImageUrl;
+    if (event.currentTarget.src !== fallbackImageUrl) {
+      event.currentTarget.onerror = null;
+      event.currentTarget.src = fallbackImageUrl;
+    }
   };
 
    // --- Handler cho nút Place Order ---
@@ -163,7 +165,11 @@ const CartPage = () => {
               {cartItems.map((item) => {
                 // Tạo URL ảnh Picsum cho item này
                 const bookSeed = item.bookDetails.bookCoverPhoto;
-                const imageUrl = `${picsumBaseUrl}${bookSeed}/${CART_IMAGE_WIDTH}/${CART_IMAGE_HEIGHT}`;
+                let imageUrl = fallbackImageUrl;
+                if (bookSeed && typeof bookSeed === 'string' && bookSeed.trim() !== '') {
+                  imageUrl = `${picsumBaseUrl}${bookSeed}/${CART_IMAGE_WIDTH}/${CART_IMAGE_HEIGHT}`;
+                }
+
                 // --- URL chi tiết sản phẩm ---
                 const productUrl = `/product/${item.bookDetails.id}`;
                 // --- ---

@@ -143,15 +143,24 @@ const ProductDetailPage = () => {
 
   // --- Xây dựng URL ảnh (ví dụ dùng Picsum) ---
   const picsumBaseUrl = import.meta.env.VITE_PICSUM_SEED_BASE_URL || 'https://picsum.photos/seed/';
-  const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/placeholder-cover.png';
+  const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/images/fallback_book.png';
   // Kích thước lớn hơn cho trang chi tiết
   const DETAIL_IMAGE_WIDTH = 400;
   const DETAIL_IMAGE_HEIGHT = Math.round(DETAIL_IMAGE_WIDTH * 1.05); // Giữ tỉ lệ
-  const actualImageUrl = `${picsumBaseUrl}${productData.bookCoverPhoto}/${DETAIL_IMAGE_WIDTH}/${DETAIL_IMAGE_HEIGHT}`;
+
+  let actualImageUrl = fallbackImageUrl;
+  const bookCoverPhoto = productData?.bookCoverPhoto
+
+  // Chỉ tạo URL Picsum nếu bookCoverPhoto là string hợp lệ (không null, không rỗng)
+  if (bookCoverPhoto && typeof bookCoverPhoto === 'string' && bookCoverPhoto.trim() !== '') {
+    actualImageUrl = `${picsumBaseUrl}${bookCoverPhoto}/${DETAIL_IMAGE_WIDTH}/${DETAIL_IMAGE_HEIGHT}`;
+ }
 
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    event.currentTarget.onerror = null;
-    event.currentTarget.src = fallbackImageUrl;
+    if (event.currentTarget.src !== fallbackImageUrl) {
+      event.currentTarget.onerror = null;
+      event.currentTarget.src = fallbackImageUrl;
+  }
   };
   // --- ---
 
