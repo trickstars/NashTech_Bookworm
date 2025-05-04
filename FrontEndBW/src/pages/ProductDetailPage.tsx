@@ -10,7 +10,7 @@ import type { BookDetail } from '@/types/book'; // Hoặc /types
 import { useCart } from '@/contexts/CartContext'; // <-- Import useCart
 import { toast } from "sonner"; // <-- Import toast
 
-import CustomerReviewSection from '@/components/CustomerReview';
+import CustomerReview from '@/components/CustomerReview';
 
 // --- Placeholder Data ---
 // const product = {
@@ -166,7 +166,7 @@ const ProductDetailPage = () => {
 
 
   return (
-    <div>
+    <div className='flex flex-col gap-6'>
       {/* --- Section 1: Category Name --- */}
       <section className="container mx-auto px-4 pb-4">
         {/* Tăng kích thước, độ đậm cho Category */}
@@ -288,8 +288,8 @@ const ProductDetailPage = () => {
       </section>
       {/* === Kết thúc Section 1 === */}
 
-      <Separator />
-      <CustomerReviewSection></CustomerReviewSection>
+      {/* <Separator /> */}
+      <CustomerReview productId={productData?.id}></CustomerReview>
     </div>
 
   );
