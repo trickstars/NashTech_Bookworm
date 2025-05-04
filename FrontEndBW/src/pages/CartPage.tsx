@@ -301,17 +301,20 @@ if (isSuccessModalOpen) {
 
   return (
     <div>
+      <div className='pb-4 border-b border-border mb-8'>
+          <h2 className="text-xl font-semibold tracking-tight">
+            Your cart: {totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''}
+          </h2>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,_2fr)_minmax(0,_1fr)] gap-8 xl:gap-12">
         {/* Left Column: Cart Items */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Your cart: {totalItemsCount} item{totalItemsCount !== 1 ? 's' : ''}
-          </h2>
   
           {/* Cart Items List */}
-          <div>
+          <div className='border rounded-lg'>
             {/* Header Row */}
-            <div className="flex items-center text-sm font-medium text-muted-foreground border-b pb-2 mb-4 gap-4">
+            <div className="flex items-center text-sm font-medium text-foreground border-b px-4 py-2 mb-4 gap-4">
               <span className="w-full flex-[2_2_0%]">Product</span> {/* Use flex-basis */}
               <span className="w-auto flex-[1_1_0%] text-right">Price</span>
               <span className="w-auto flex-[1_1_0%] text-center px-2">Quantity</span>
@@ -322,7 +325,7 @@ if (isSuccessModalOpen) {
             {/* Item Rows */}
             {cartItems.length > 0 ? (
               // Sử dụng divide-y để tạo đường kẻ giữa các item
-              <div className="divide-y">
+              <div className="divide-y px-4">
                 {cartItems.map((item) => {
                   // Tạo URL ảnh Picsum cho item này
                   const bookSeed = item.bookDetails.bookCoverPhoto;
@@ -442,18 +445,16 @@ if (isSuccessModalOpen) {
         {/* Right Column: Cart Totals */}
         {cartItems.length > 0 && (
           <div className="lg:sticky lg:top-20 self-start">
-            <Card>
-              <CardHeader>
-                <CardTitle>Cart Totals</CardTitle>
+            <Card className="overflow-hidden">
+              <CardHeader className="flex justify-center items-center text-center bg-muted/50 border-b pb-0">
+                <CardTitle className="text-base font-bold">Cart Totals</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-6 flex justify-center items-center">
                  {/* Có thể thêm Subtotal, Tax, Shipping ở đây */}
-                 <Separator />
-                 <div className="flex justify-between items-center font-semibold text-lg">
-                    <span>Total</span>
-                    {/* Lấy tổng tiền từ context */}
-                    <span>${subtotal.toFixed(2)}</span>
-                 </div>
+                  {/* Chỉ hiển thị giá, cỡ lớn, đậm */}
+                  <p className="text-3xl font-bold">
+                      ${subtotal.toFixed(2)}
+                  </p>
               </CardContent>
               <CardFooter>
                  {/* --- Cập nhật nút Place order --- */}

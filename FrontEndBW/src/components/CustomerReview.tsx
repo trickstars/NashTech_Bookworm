@@ -1,192 +1,467 @@
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
-
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
-
+// src/components/product/CustomerReview.tsx
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown, Star } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Star, ChevronDown, Loader2 } from 'lucide-react';
+// Giả sử API function và types được import đúng đường dẫn
+// import { getReviewsByProductId } from '@/api/reviewApi';
+// import type { Review, ReviewListResponse, ReviewParams } from '@/types/review';
+import { cn } from "@/lib/utils";
+import { toast } from 'sonner';
 
-const reviews = {
-    averageRating: 4.6,
-    totalReviews: 1536,
-    ratingCounts: [
-      { stars: 5, count: 1001 },
-      { stars: 4, count: 258 },
-      { stars: 3, count: 100 },
-      { stars: 2, count: 52 },
-      { stars: 1, count: 125 },
-    ],
+// --- Constants ---
+const REVIEW_SORT_OPTIONS = [
+    { value: "date.desc", label: "Sort by date: newest to oldest" },
+    { value: "date.asc", label: "Sort by date: oldest to newest" },
+];
+const REVIEW_LIMIT_OPTIONS = [5, 15, 20, 25];
+const DEFAULT_REVIEW_LIMIT = REVIEW_LIMIT_OPTIONS[1]; // 10
+const DEFAULT_REVIEW_SORT = REVIEW_SORT_OPTIONS[0].value; // date.desc
+const DEFAULT_CURRENT_PAGE = 1;
+// --- ---
+
+// --- *** THÊM DỮ LIỆU GIẢ (PLACEHOLDER DATA) *** ---
+// Định nghĩa lại kiểu dữ liệu tạm thời ở đây nếu bạn đã comment out import
+interface ReviewPlaceholder {
+    id: number | string;
+    title: string;
+    rating: number;
+    date: string;
+    text: string;
+  }
+  interface RatingCount { stars: number; count: number; }
+  
+  const placeholderReviewsResponse = {
     items: [
-      { id: 'r1', title: 'Amazing Story! You will LOVE it', rating: 5, date: 'April 12, 2021', text: 'Such an incredibly complex story! I had to buy it because there was a waiting list of 30+ at the local library for this book. Thrilled that I made the purchase.' },
-      { id: 'r2', title: 'Amazing Story! You will LOVE it', rating: 5, date: 'April 12, 2021', text: 'Such an incredibly complex story! I had to buy it because there was a waiting list of 30+ at the local library for this book. Thrilled that I made the purchase.' },
-      { id: 'r3', title: 'Amazing Story! You will LOVE it', rating: 5, date: 'April 12, 2021', text: 'Such an incredibly complex story! I had to buy it because there was a waiting list of 30+ at the local library for this book. Thrilled that I made the purchase.' },
-      { id: 'r4', title: 'Amazing Story! You will LOVE it', rating: 5, date: 'April 12, 2021', text: 'Such an incredibly complex story! I had to buy it because there was a waiting list of 30+ at the local library for this book. Thrilled that I made the purchase.' },
-    ],
-    pagination: {
-      currentPage: 1,
-      totalPages: 12,
-      startItem: 1,
-      endItem: 12,
-      totalItems: 3134,
+      { id: 'r1', title: 'Absolutely Fantastic!', rating: 5, date: '2025-05-01T10:00:00Z', text: 'This book was amazing, I couldn\'t put it down. Highly recommended for everyone!' },
+      { id: 'r2', title: 'Great Read', rating: 4, date: '2025-04-28T14:30:00Z', text: 'Enjoyed this book a lot. The characters were well-developed and the plot kept me engaged.' },
+      { id: 'r3', title: 'Decent, but slow start', rating: 3, date: '2025-04-25T09:15:00Z', text: 'It took a while for the story to pick up, but the ending was satisfying. Overall a decent read.' },
+      { id: 'r4', title: 'Good story', rating: 5, date: '2025-04-22T11:00:00Z', text: 'Really captivating narrative. Loved the world-building.' },
+      { id: 'r5', title: 'Not my cup of tea', rating: 2, date: '2025-04-20T18:45:00Z', text: 'I couldn\'t really get into this one, unfortunately. The writing style wasn\'t for me.' },
+    ] as ReviewPlaceholder[], // Dùng type placeholder
+    totalItems: 25, // Tổng số review giả
+    totalPages: 3,  // Tổng số trang giả (25 items / 10 limit)
+    currentPage: 1, // Trang hiện tại giả
+    averageRating: 4.1, // Rating trung bình giả
+    ratingCounts: [ // Số lượng giả cho mỗi rating
+      { stars: 5, count: 15 },
+      { stars: 4, count: 5 },
+      { stars: 3, count: 3 },
+      { stars: 2, count: 1 },
+      { stars: 1, count: 1 },
+    ] as RatingCount[],
+  };
+  // --- *** KẾT THÚC DỮ LIỆU GIẢ *** ---
+
+// --- Props Interface ---
+interface CustomerReviewProps {
+  productId: string | number;
+}
+// --- ---
+
+// --- Hàm Helper Pagination ---
+const generatePageNumbers = (currentPage: number, totalPages: number): (number | '...')[] => {
+    if (totalPages <= 5) { // Show all pages if 5 or less
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | '...')[] = [];
+    const siblings = 1; // Number of pages links around current page
+
+    // Always show first page
+    pages.push(1);
+
+    // Ellipsis before current page?
+    if (currentPage > siblings + 2) {
+        pages.push('...');
+    }
+
+    // Pages around current page
+    const startPage = Math.max(2, currentPage - siblings);
+    const endPage = Math.min(totalPages - 1, currentPage + siblings);
+    for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+    }
+
+    // Ellipsis after current page?
+    if (currentPage < totalPages - (siblings + 1)) {
+        pages.push('...');
+    }
+
+    // Always show last page (if different from 1)
+    if (totalPages > 1) {
+        pages.push(totalPages);
+    }
+    // Remove duplicates just in case simple logic adds duplicates near ends
+    return [...new Set(pages)];
+};
+// --- ---
+
+// --- Component ---
+const CustomerReview = ({ productId }: CustomerReviewProps) => {
+  // --- State ---
+//   const [reviewsResponse, setReviewsResponse] = useState<ReviewListResponse | null>(null);
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+
+const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm state cho filter rating
+  const [currentPage, setCurrentPage] = useState(DEFAULT_CURRENT_PAGE);
+  const [limit, setLimit] = useState(DEFAULT_REVIEW_LIMIT);
+  const [sortOption, setSortOption] = useState(DEFAULT_REVIEW_SORT);
+
+  // State for Write Review Form
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewDetails, setReviewDetails] = useState('');
+  const [reviewRating, setReviewRating] = useState<string>('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [submitReviewError, setSubmitReviewError] = useState<string | null>(null);
+  // --- ---
+
+  // --- Data Fetching Effect ---
+//   const fetchReviews = useCallback(async () => {
+//     if (!productId) return;
+//     setIsLoading(true);
+//     setError(null);
+//     const [sortBy, order] = sortOption.split('.');
+//     const params: ReviewParams = {
+//       page: currentPage,
+//       limit: limit,
+//       sortBy: sortBy as ReviewParams['sortBy'],
+//       order: order as ReviewParams['order'],
+//     };
+//     try {
+//       const data = await getReviewsByProductId(productId, params);
+//       setReviewsResponse(data);
+//     } catch (err: any) {
+//       setError(err.message || 'Failed to load reviews.');
+//       setReviewsResponse(null); // Reset data on error
+//       console.error("Error fetching reviews:", err);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   }, [productId, currentPage, limit, sortOption]);
+
+//   useEffect(() => {
+//     fetchReviews();
+//   }, [fetchReviews]);
+  // --- ---
+
+  // --- Event Handlers ---
+    // Handler mới cho filter rating
+  const handleRatingFilterClick = (rating: number | null) => {
+    setActiveRating(current => (current === rating ? null : rating)); // Toggle filter
+    setCurrentPage(DEFAULT_CURRENT_PAGE); // Reset về trang 1
+};
+
+  const handlePageChange = (newPage: number) => {
+    //   if (newPage >= 1 && newPage <= (reviewsResponse?.totalPages ?? 1)) {
+    //       setCurrentPage(newPage);
+    //       // Optional: Scroll to top of reviews section
+    //       // document.getElementById('customer-reviews-heading')?.scrollIntoView({ behavior: 'smooth' });
+    //   }
+    const totalPgs = placeholderReviewsResponse?.totalPages ?? 1; // Dùng totalPages từ data giả
+       if (newPage >= 1 && newPage <= totalPgs) {
+           setCurrentPage(newPage);
+       }
+  };
+
+  const handleSortChange = (value: string) => {
+     if (value && value !== sortOption) {
+         setSortOption(value);
+         setCurrentPage(DEFAULT_CURRENT_PAGE); // Reset to page 1 on sort change
+     }
+  };
+
+  const handleLimitChange = (value: string) => {
+    const newLimit = parseInt(value, 10);
+    if (!isNaN(newLimit) && REVIEW_LIMIT_OPTIONS.includes(newLimit) && newLimit !== limit) {
+      setLimit(newLimit);
+      setCurrentPage(DEFAULT_CURRENT_PAGE); // Reset to page 1 on limit change
     }
   };
-  // --- End Placeholder Data ---
 
-const CustomerReviewSection = () => {
+  const handleReviewSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setSubmitReviewError(null);
+      if (!reviewRating) {
+          setSubmitReviewError("Please select a rating star.");
+          return;
+      }
+      setIsSubmittingReview(true);
+      console.log("Submitting review:", { title: reviewTitle, details: reviewDetails, rating: reviewRating });
+      try {
+          // TODO: Replace with actual API call to post the review
+          // await postReviewApi(productId, {
+          //     title: reviewTitle,
+          //     text: reviewDetails,
+          //     rating: parseInt(reviewRating, 10)
+          // });
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+          toast.success("Review submitted successfully! It may take some time to appear.");
 
-    const renderStars = (rating: number) => {
-        const fullStars = Math.floor(rating);
-        const emptyStars = 5 - fullStars;
-        return (
-          <div className="flex items-center text-yellow-400">
-            {[...Array(fullStars)].map((_, i) => <Star key={`full-${i}`} className="h-4 w-4 fill-current" />)}
-            {[...Array(emptyStars)].map((_, i) => <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300 fill-current" />)}
-          </div>
-        );
-      };
+          // Reset form and potentially refetch reviews
+          setReviewTitle('');
+          setReviewDetails('');
+          setReviewRating('');
+          if(currentPage !== 1) {
+            setCurrentPage(1); // Go to page 1 after submit might not show the new review
+          }
+        //   fetchReviews(); // Refetch reviews to potentially show the new one (or after moderation)
 
+      } catch (err: any) {
+           const message = err.message || "Failed to submit review.";
+           setSubmitReviewError(message);
+           toast.error(message);
+      } finally {
+           setIsSubmittingReview(false);
+      }
+  };
+  // --- ---
+
+  // --- Helper Function ---
+  const renderStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const emptyStars = 5 - fullStars;
+    // Render solid stars - requires Star icon to support fill
     return (
-        <section>
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,_2fr)_minmax(0,_1fr)] gap-12">
-                <div className="space-y-6">
-                <h2 className="text-2xl font-semibold tracking-tight">
-                    Customer Reviews
-                </h2>
+      <div className="flex items-center text-yellow-400">
+        {[...Array(fullStars)].map((_, i) => <Star key={`fs-${i}`} className="h-4 w-4 fill-current" />)}
+        {[...Array(emptyStars)].map((_, i) => <Star key={`es-${i}`} className="h-4 w-4 text-muted-foreground" />)}
+      </div>
+    );
+  };
+  // --- ---
 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border rounded-lg">
-                    <div className="text-center sm:text-left">
-                        <p className="text-4xl font-bold">{reviews.averageRating.toFixed(1)}</p>
-                        <div className="flex justify-center sm:justify-start mt-1">
-                            {renderStars(reviews.averageRating)}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">based on {reviews.totalReviews} reviews</p>
-                    </div>
-                    <div className="flex-1 space-y-1 text-xs">
-                        {reviews.ratingCounts.map(item => (
-                            <div key={item.stars} className="flex items-center gap-2">
-                            <span className="w-8 text-right">{item.stars} star</span>
-                            <div className="h-2 flex-1 bg-muted rounded overflow-hidden">
-                                <div
-                                    className="h-full bg-yellow-400"
-                                    style={{ width: `${(item.count / reviews.totalReviews) * 100}%` }}
-                                ></div>
-                            </div>
-                            <span className="w-10 text-right text-muted-foreground">{item.count}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+  // --- Calculated values for rendering ---
+//    const reviews = reviewsResponse?.items ?? [];
+//    const totalItems = reviewsResponse?.totalItems ?? 0;
+//    const totalPages = reviewsResponse?.totalPages ?? 1;
+//    const averageRating = reviewsResponse?.averageRating ?? 0;
+//    const ratingCountsMap = useMemo(() => {
+//        const map = new Map<number, number>();
+//        reviewsResponse?.ratingCounts?.forEach(rc => map.set(rc.stars, rc.count));
+//        return map;
+//     }, [reviewsResponse?.ratingCounts]);
 
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                    <p className="text-sm text-muted-foreground">
-                        Showing {reviews.pagination.startItem}–{reviews.pagination.endItem} of {reviews.pagination.totalItems} reviews
-                    </p>
-                    <div className="flex items-center space-x-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="flex items-center gap-1">
-                                Sort by date <ChevronDown className="h-4 w-4" />
-                            </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Date: Newest to Oldest</DropdownMenuItem>
-                            <DropdownMenuItem>Date: Oldest to Newest</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                                Show 12 <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Show 12</DropdownMenuItem>
-                                <DropdownMenuItem>Show 24</DropdownMenuItem>
-                                <DropdownMenuItem>Show 36</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
+  // --- Lấy dữ liệu từ DỮ LIỆU GIẢ ---
+  const reviews = placeholderReviewsResponse.items.slice(0, limit); // Lấy số lượng theo limit
+  const totalItems = placeholderReviewsResponse.totalItems;
+  const totalPages = Math.ceil(totalItems / limit); // Tính lại totalPages dựa trên limit hiện tại
+  // const currentPage = placeholderReviewsResponse.currentPage; // << Dùng state currentPage
+  const averageRating = placeholderReviewsResponse.averageRating;
+  const ratingCountsMap = useMemo(() => {
+      const map = new Map<number, number>();
+      placeholderReviewsResponse.ratingCounts?.forEach(rc => map.set(rc.stars, rc.count));
+      return map;
+  }, []); // Chỉ tính 1 lần vì data giả không đổi
 
-                <div className="space-y-6">
-                    {reviews.items.map(review => (
-                        <article key={review.id} className="border-b pb-6">
-                            <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold">{review.title}</h4>
-                            <div className="ml-auto flex items-center">
-                                {renderStars(review.rating)}
-                            </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground mb-2">{review.date}</p>
-                            <p className="text-sm leading-relaxed">{review.text}</p>
-                        </article>
-                    ))}
-                </div>
+   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
+   const endItem = Math.min(currentPage * limit, totalItems);
+   const currentSortLabel = REVIEW_SORT_OPTIONS.find(opt => opt.value === sortOption)?.label || 'Sort by...';
+   const currentLimitLabel = `Show ${limit}`;
+   const pageNumbers = useMemo(() => generatePageNumbers(currentPage, totalPages), [currentPage, totalPages]);
+  // --- ---
 
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                        <PaginationPrevious href="#" aria-disabled={reviews.pagination.currentPage <= 1} />
-                        </PaginationItem>
-                        <PaginationItem><PaginationLink href="#" isActive>1</PaginationLink></PaginationItem>
-                        <PaginationItem><PaginationLink href="#">2</PaginationLink></PaginationItem>
-                        <PaginationItem><PaginationLink href="#">3</PaginationLink></PaginationItem>
-                        {reviews.pagination.totalPages > 3 && <PaginationItem><PaginationEllipsis /></PaginationItem>}
-                        <PaginationItem>
-                        <PaginationNext href="#" aria-disabled={reviews.pagination.currentPage >= reviews.pagination.totalPages}/>
-                        </PaginationItem>
-                    </PaginationContent>
-                    </Pagination>
 
-                </div>
+  return (
+    <section aria-labelledby="customer-reviews-heading">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,_2fr)_minmax(0,_1fr)] gap-12">
 
-                <div>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Write a Review</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label htmlFor="review-title" className="text-sm font-medium block mb-1.5">Add a title</label>
-                            <Input id="review-title" placeholder="What's most important to know?" />
-                        </div>
-                        <div>
-                            <label htmlFor="review-details" className="text-sm font-medium block mb-1.5">Details please!</label>
-                            <Textarea id="review-details" placeholder="Your review helps other shoppers." rows={5}/>
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium block mb-1.5">Select a rating star <span className="text-destructive">*</span></label>
-                            <div className="flex items-center space-x-1 text-gray-400 cursor-pointer">
-                                {[1, 2, 3, 4, 5].map(star => (
-                                <Star key={star} className="h-6 w-6 hover:text-yellow-400"/>
-                                ))}
-                            </div>
-                        </div>
-                        <Button className="w-full">Submit Review</Button>
-                    </CardContent>
-                </Card>
-                </div>
-            </div>
-        </section>
-        
-    )
-}
+        {/* === Cột Trái: Review Summary & List === */}
+        <div className="space-y-6 p-4 border border-border rounded-lg bg-muted">
+          <h2 id="customer-reviews-heading" className="text-lg font-semibold tracking-tight">
+            Customer Reviews
+            {/* Hiển thị filter rating đang active */}
+            {activeRating && <span className='text-sm font-normal text-muted-foreground ml-2'>(Filtered by {activeRating} star{activeRating > 1 ? 's' : ''})</span>}
+          </h2>
 
-export default CustomerReviewSection;
+          {/* Rating Summary */}
+          <div className="text-sm">
+             <div > {/* flex-wrap for smaller screens */}
+                <p className="text-3xl font-bold">{averageRating > 0 ? averageRating.toFixed(1) : '-'}<span className='text-lg font-medium ml-1'>Star</span></p>
+                {/* Text + Link filter phân loại sao */}
+                 {/* Căn chỉnh items-baseline để số và text thẳng hàng */}
+                 <div className='flex items-baseline gap-x-2 flex-wrap text-xs text-muted-foreground'>
+                     <span>({totalItems})</span>
+                     {[5, 4, 3, 2, 1].map(star => (
+                        <React.Fragment key={star}>
+                            <span>|</span>
+                            <button
+                                onClick={() => handleRatingFilterClick(star)}
+                                className={cn(
+                                    "hover:text-primary hover:underline underline-offset-2",
+                                    activeRating === star && "text-primary font-semibold" // Style khi active
+                                )}
+                            >
+                               {star} star ({ratingCountsMap.get(star) || 0})
+                            </button>
+                        </React.Fragment>
+                     ))}
+                 </div>
+             </div>
+          </div>
+
+          {/* Review List Header */}
+           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+               <p className="text-sm text-muted-foreground">
+                  {/* {!isLoading && (totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} reviews` : 'No reviews yet.')}
+                  {isLoading && <span className='animate-pulse'>Loading reviews...</span>} */}
+                  {totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} reviews` : 'No reviews yet.'}
+               </p>
+               <div className="flex items-center space-x-2">
+                 <DropdownMenu>
+                   <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-xs">{currentSortLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                   <DropdownMenuContent align="end">
+                     {/* <DropdownMenuLabel>Sort By</DropdownMenuLabel><DropdownMenuSeparator /> */}
+                     <DropdownMenuRadioGroup value={sortOption} onValueChange={handleSortChange}>
+                        {REVIEW_SORT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt.value} value={opt.value} className="[&>span]:hidden pr-2 text-xs">{opt.label}</DropdownMenuRadioItem> ))}
+                     </DropdownMenuRadioGroup>
+                   </DropdownMenuContent>
+                 </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-xs">{currentLimitLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                       {/* <DropdownMenuLabel>Show per page</DropdownMenuLabel><DropdownMenuSeparator /> */}
+                       <DropdownMenuRadioGroup value={String(limit)} onValueChange={handleLimitChange}>
+                          {REVIEW_LIMIT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt} value={String(opt)} className="[&>span]:hidden pr-2 text-xs">Show {opt}</DropdownMenuRadioItem> ))}
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+               </div>
+           </div>
+
+          {/* Review List */}
+          {
+        //   isLoading ? (
+        //      <div className="space-y-6">
+        //          {Array.from({ length: 3 }).map((_, i) => ( // Hiển thị ít skeleton hơn
+        //              <div key={`rev-skel-${i}`} className="border-b pb-6 space-y-2 animate-pulse last:border-b-0">
+        //                  <div className="flex justify-between">
+        //                      <div className="h-5 w-3/5 bg-muted rounded"></div>
+        //                      <div className="h-4 w-12 bg-muted rounded"></div>
+        //                  </div>
+        //                  <div className="h-3 w-1/4 bg-muted rounded"></div>
+        //                  <div className="h-4 w-full bg-muted rounded"></div>
+        //                  <div className="h-4 w-5/6 bg-muted rounded"></div>
+        //              </div>
+        //          ))}
+        //      </div>
+        //   ) : error ? (
+        //      <p className="text-destructive text-center py-10">{error}</p>
+        //   ) : 
+          reviews.length > 0 ? (
+             <div className="space-y-6">
+                {reviews.map(review => (
+                   <article key={review.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                      <div className="flex justify-between items-center gap-2 mb-1">
+                         <h4 className="font-semibold text-base">{review.title || 'Review'}</h4>
+                         <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">{review.rating} stars</span>
+                      </div>
+                      <p className="text-sm leading-relaxed mb-2">{review.text}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p> {/* Format date */}
+                   </article>
+                ))}
+             </div>
+           ) : (
+              <p className="text-muted-foreground text-center py-10">Be the first to write a review!</p>
+           )}
+
+          {/* Pagination */}
+          {
+        //   !isLoading && 
+          totalItems > 0 && totalPages > 1 && (
+              <div className="pt-6 text-center">
+                  <Pagination className="inline-flex">
+                      <PaginationContent>
+                          <PaginationItem><PaginationPrevious onClick={(e) => { e.preventDefault(); handlePageChange(currentPage - 1); }} aria-disabled={currentPage <= 1} className={cn(currentPage <= 1 ? "pointer-events-none opacity-50" : undefined, "cursor-pointer")}/></PaginationItem>
+                          {pageNumbers.map((page, index) => (
+                              <PaginationItem key={index}>
+                                  {page === '...' ? <PaginationEllipsis /> : <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(page); }} isActive={currentPage === page} className="cursor-pointer">{page}</PaginationLink>}
+                              </PaginationItem>
+                          ))}
+                          <PaginationItem><PaginationNext onClick={(e) => { e.preventDefault(); handlePageChange(currentPage + 1); }} aria-disabled={currentPage >= totalPages} className={cn(currentPage >= totalPages ? "pointer-events-none opacity-50" : undefined, "cursor-pointer")}/></PaginationItem>
+                      </PaginationContent>
+                  </Pagination>
+                  <p className="text-xs text-muted-foreground mt-2"> Page {currentPage} of {totalPages} </p>
+              </div>
+          )}
+        </div>
+        {/* === Kết thúc Cột Trái === */}
+
+
+        {/* === Cột Phải: Write a Review === */}
+        <div>
+           <Card className='overflow-hidden rounded-md'>
+             <CardHeader className="px-6 pt-4 bg-muted/50 border-b">
+               <CardTitle className=''>Write a Review</CardTitle>
+             </CardHeader>
+             <CardContent>
+                <form onSubmit={handleReviewSubmit} className="space-y-4">
+                   <div>
+                     <Label htmlFor="review-title" className="text-sm font-medium block mb-1.5">Add a title</Label>
+                     <Input id="review-title" placeholder="What's most important to know?" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} disabled={isSubmittingReview} />
+                   </div>
+                   <div>
+                     <Label htmlFor="review-details" className="text-sm font-medium block mb-1.5">Details please!</Label>
+                     <Textarea id="review-details" placeholder="Your review helps other shoppers." rows={5} value={reviewDetails} onChange={(e) => setReviewDetails(e.target.value)} disabled={isSubmittingReview} />
+                   </div>
+                   <div>
+                       <Label htmlFor="review-rating" className="text-sm font-medium block mb-1.5">Select a rating star <span className="text-destructive">*</span></Label>
+                       <Select value={reviewRating} onValueChange={setReviewRating} disabled={isSubmittingReview}>
+                           <SelectTrigger id="review-rating" className="w-full">
+                               <SelectValue placeholder="Select rating..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                               <SelectItem value="5">5 Star</SelectItem>
+                               <SelectItem value="4">4 Stars</SelectItem>
+                               <SelectItem value="3">3 Stars</SelectItem>
+                               <SelectItem value="2">2 Stars</SelectItem>
+                               <SelectItem value="1">1 Star</SelectItem>
+                           </SelectContent>
+                       </Select>
+                   </div>
+                   {submitReviewError && <p className='text-sm text-destructive'>{submitReviewError}</p>}
+                   <Button type="submit" className="w-full" disabled={isSubmittingReview}>
+                       {isSubmittingReview && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                       Submit Review
+                   </Button>
+                </form>
+             </CardContent>
+           </Card>
+        </div>
+         {/* === Kết thúc Cột Phải === */}
+
+      </div>
+    </section>
+  );
+};
+
+export default CustomerReview; // Đổi tên export default
