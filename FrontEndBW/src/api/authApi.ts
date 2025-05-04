@@ -8,6 +8,7 @@ import axios from 'axios';
 const ENDPOINTS = {
   LOGIN: '/auth/token', // Endpoint /token của FastAPI
   GET_ME: '/auth/users/me', // Endpoint lấy thông tin user hiện tại
+  REFRESH: '/auth/refresh', // <-- Endpoint refresh token
 };
 
 /**
@@ -36,6 +37,27 @@ export const loginUser = async (emailAsUsername: string, password: string): Prom
     throw new Error(detail); // Ném lỗi với thông điệp từ backend nếu có
   }
 };
+
+// --- HÀM MỚI CHO REFRESH TOKEN ---
+/**
+ * Gửi refresh token hiện tại để lấy cặp token mới.
+ * Sử dụng apiClient vì request này tự nó là một hình thức xác thực.
+ */
+export const refreshTokenApi = async (currentRefreshToken: string): Promise<TokenResponse> => {
+  // Backend mong đợi {"refresh_token": "..."} sau khi decamelize
+  const payload = { refreshToken: currentRefreshToken };
+  try {
+      // Gọi endpoint /auth/refresh
+      const response = await apiClient.post<TokenResponse>(ENDPOINTS.REFRESH, payload);
+      // Response data đã được camelize bởi interceptor của apiClient
+      return response.data;
+  } catch (error) {
+      console.error("Refresh token API error:", error);
+      // Ném lỗi để interceptor gốc (handleAuthApiError) xử lý việc logout
+      throw error;
+  }
+}
+// --- ---
 
 /**
  * Gọi API để lấy thông tin user đang đăng nhập bằng Access TokenResponse.
