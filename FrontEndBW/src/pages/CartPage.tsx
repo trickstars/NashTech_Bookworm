@@ -180,7 +180,12 @@ const CartPage = () => {
 
                     {/* Cột Product Details */}
                     <div className="flex items-center gap-3 md:gap-4 flex-[2_2_0%]">
-                      <Link to={productUrl} aria-label={`View ${item.bookDetails.bookTitle}`}>
+                      <Link 
+                        to={productUrl} 
+                        aria-label={`View ${item.bookDetails.bookTitle}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                      >
                         <div className="w-16 h-20 md:w-20 md:h-[84px] bg-secondary rounded overflow-hidden flex-shrink-0">
                           <img
                             src={imageUrl || fallbackImageUrl}
