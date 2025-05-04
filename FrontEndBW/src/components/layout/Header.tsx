@@ -26,6 +26,11 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"; // Cho menu user
+import ToastWithCountdown from '../common/ToastWithCountDown';
+
+// --- Đọc URL logo từ biến môi trường ---
+const logoUrl = import.meta.env.VITE_APP_LOGO_URL || '/logo.svg'; // Có giá trị dự phòng
+// --- ---
 
 const Header = () => {
   // Lấy trực tiếp giá trị cartItemCount từ context
@@ -52,15 +57,24 @@ const Header = () => {
     try {
         const success = await login(loginEmail, loginPassword);
         if (success) {
-            toast.success("Login successful!");
+          toast.success(
+            <ToastWithCountdown message="Login successfully!" />
+            // Không cần set duration ở đây nữa vì Toaster đã có mặc định 10s
+            // { duration: 10000, closeButton: true } // Các options này giờ đã set ở Toaster
+          );
             // setIsLoginDialogOpen(false); // Đóng dialog khi thành công
             setLoginEmail(''); // Reset form
             setLoginPassword('');
         }
         // Không cần xử lý lỗi ở đây nữa vì hàm login đã throw error
     } catch (error: any) {
-         setLoginError(error.message || "An unknown error occurred.");
+         setLoginError(error.message || "Login failed. Please check your credentials.");
         //  toast.error(error.message || "Login failed."); // Hiển thị toast lỗi
+         toast.error(
+          <ToastWithCountdown message={error.message || "Login failed."} />
+          // Không cần set duration ở đây nữa vì Toaster đã có mặc định 10s
+          // { duration: 10000, closeButton: true } // Các options này giờ đã set ở Toaster
+      );
     } finally {
          setIsLoggingIn(false);
     }
@@ -80,7 +94,7 @@ const Header = () => {
             // --- IMPORTANT ---
             // Replace '/logo.svg' with the actual path to your logo image
             // If your logo is in the 'public' folder, '/logo.svg' or '/logo.png' should work.
-            src="/logo.svg"
+            src={logoUrl}
             alt="Bookworm Logo"
             // Adjust size (h-7 w-7) and margin (mr-2) as needed
             className="h-8 w-8 mr-2"
@@ -164,7 +178,7 @@ const Header = () => {
                         required
                         disabled={isLoggingIn}
                         className="col-span-3"
-                      />
+                        />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="login-password" className="text-right">Password</Label>
@@ -176,10 +190,12 @@ const Header = () => {
                         required
                         disabled={isLoggingIn}
                         className="col-span-3"
-                      />
+                        />
                     </div>
                     {loginError && (
-                        <p className="text-sm text-destructive text-center col-span-4">{loginError}</p>
+                        // < className='grid grid-cols-4 items-center gap-4'>
+                          <p className="text-sm text-destructive text-left">{loginError}</p>
+                        
                     )}
                   </div>
                   <DialogFooter>

@@ -60,13 +60,13 @@ interface ShopSidebarProps {
   
     return (
       <aside>
-        <h3 className="text-lg font-semibold mb-4">Filter By</h3>
-        <Accordion type="multiple" defaultValue={['category', 'author']} className="w-full">
+        <h3 className="text-base font-semibold mb-4">Filter By</h3>
+        <Accordion type="multiple" defaultValue={['category', 'author']} className="w-full space-y-3">
   
           {/* Category Filter */}
-          <AccordionItem value="category">
-            <AccordionTrigger>Category</AccordionTrigger>
-            <AccordionContent>
+          <AccordionItem value="category" className="border border-border rounded-md overflow-hidden [&[data-state=open]>button]:border-b">
+            <AccordionTrigger className="px-4 py-3 text-sm hover:no-underline">Category</AccordionTrigger>
+            <AccordionContent className="pt-0 pb-3 px-4">
               <div className="space-y-1">
                 {categories.length > 0 ? categories.map((category) => {
                    const isActive = activeCategory === category.id;
@@ -90,9 +90,9 @@ interface ShopSidebarProps {
           </AccordionItem>
   
           {/* Author Filter */}
-          <AccordionItem value="author">
-            <AccordionTrigger>Author</AccordionTrigger>
-            <AccordionContent>
+          <AccordionItem value="author" className="border border-border rounded-md overflow-hidden [&[data-state=open]>button]:border-b">
+            <AccordionTrigger className="px-4 py-3 text-sm hover:no-underline">Author</AccordionTrigger>
+            <AccordionContent className="pt-0 pb-3 px-4">
                <div className="space-y-1">
                 {authors.length > 0 ? authors.map((author) => {
                    const isActive = activeAuthor === author.id;
@@ -116,9 +116,9 @@ interface ShopSidebarProps {
           </AccordionItem>
   
           {/* Rating Review Filter */}
-          <AccordionItem value="rating">
-            <AccordionTrigger>Rating Review</AccordionTrigger>
-            <AccordionContent>
+          <AccordionItem value="rating" className="border border-border rounded-md overflow-hidden [&[data-state=open]>button]:border-b">
+            <AccordionTrigger className="px-4 py-3 text-sm hover:no-underline">Rating Review</AccordionTrigger>
+            <AccordionContent className="pt-0 pb-3 px-4">
                <div className="space-y-1">
                 {ratings.map((rating) => {
                    const isActive = activeRating === rating.id;

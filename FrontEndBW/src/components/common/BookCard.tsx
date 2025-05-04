@@ -16,11 +16,11 @@ import { Link } from "react-router-dom";
 
   // Đọc biến môi trường (cung cấp giá trị mặc định nếu cần)
 const picsumBaseUrl = import.meta.env.VITE_PICSUM_SEED_BASE_URL || 'https://picsum.photos/seed/';
-const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/placeholder-cover.png';
+const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/images/fallback_book.png';
 
 // Định nghĩa kích thước ảnh mong muốn (có thể đặt vào constants nếu muốn)
 const IMAGE_WIDTH = 300;
-const IMAGE_HEIGHT = 315; // Giữ tỉ lệ 1:1.05 cho ảnh sách
+const IMAGE_HEIGHT = Math.round(IMAGE_WIDTH * 1.05); // Giữ tỉ lệ 1:1.05
   
   const BookCard = ({
   id,
@@ -36,16 +36,21 @@ const IMAGE_HEIGHT = 315; // Giữ tỉ lệ 1:1.05 cho ảnh sách
 
   // --- Xây dựng URL ảnh Picsum ---
   // Picsum URL: base/{seed}/{width}/{height}
-  const actualImageUrl = `${picsumBaseUrl}${bookCoverPhoto}/${IMAGE_WIDTH}/${IMAGE_HEIGHT}`;
+  let actualImageUrl = fallbackImageUrl;
+
+  // Chỉ tạo URL Picsum nếu bookCoverPhoto là string hợp lệ (không null, không rỗng)
+  if (bookCoverPhoto && typeof bookCoverPhoto === 'string' && bookCoverPhoto.trim() !== '') {
+    actualImageUrl = `${picsumBaseUrl}${bookCoverPhoto}/${IMAGE_WIDTH}/${IMAGE_HEIGHT}`;
+ }
+ // --- ---
 
   // --- Hàm xử lý lỗi tải ảnh ---
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    // Ngăn vòng lặp vô hạn nếu ảnh fallback cũng lỗi
-    event.currentTarget.onerror = null;
-    // --- THAY ĐỔI ĐƯỜNG DẪN NÀY ---
-    // Đặt đường dẫn đến ảnh fallback cục bộ của bạn (trong thư mục public/)
-    event.currentTarget.src = fallbackImageUrl;
-    // --- ---
+    // Nếu ảnh (kể cả Picsum) tải lỗi, vẫn chuyển về fallback cuối cùng
+    if (event.currentTarget.src !== fallbackImageUrl) { // Tránh vòng lặp vô hạn
+      event.currentTarget.onerror = null;
+      event.currentTarget.src = fallbackImageUrl;
+  }
   };
 
   // URL chi tiết sản phẩm

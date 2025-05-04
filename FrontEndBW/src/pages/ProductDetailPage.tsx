@@ -143,31 +143,46 @@ const ProductDetailPage = () => {
 
   // --- Xây dựng URL ảnh (ví dụ dùng Picsum) ---
   const picsumBaseUrl = import.meta.env.VITE_PICSUM_SEED_BASE_URL || 'https://picsum.photos/seed/';
-  const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/placeholder-cover.png';
+  const fallbackImageUrl = import.meta.env.VITE_FALLBACK_IMAGE_URL || '/images/fallback_book.png';
   // Kích thước lớn hơn cho trang chi tiết
   const DETAIL_IMAGE_WIDTH = 400;
   const DETAIL_IMAGE_HEIGHT = Math.round(DETAIL_IMAGE_WIDTH * 1.05); // Giữ tỉ lệ
-  const actualImageUrl = `${picsumBaseUrl}${productData.bookCoverPhoto}/${DETAIL_IMAGE_WIDTH}/${DETAIL_IMAGE_HEIGHT}`;
+
+  let actualImageUrl = fallbackImageUrl;
+  const bookCoverPhoto = productData?.bookCoverPhoto
+
+  // Chỉ tạo URL Picsum nếu bookCoverPhoto là string hợp lệ (không null, không rỗng)
+  if (bookCoverPhoto && typeof bookCoverPhoto === 'string' && bookCoverPhoto.trim() !== '') {
+    actualImageUrl = `${picsumBaseUrl}${bookCoverPhoto}/${DETAIL_IMAGE_WIDTH}/${DETAIL_IMAGE_HEIGHT}`;
+ }
 
   const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    event.currentTarget.onerror = null;
-    event.currentTarget.src = fallbackImageUrl;
+    if (event.currentTarget.src !== fallbackImageUrl) {
+      event.currentTarget.onerror = null;
+      event.currentTarget.src = fallbackImageUrl;
+  }
   };
   // --- ---
 
 
   return (
-    <div className="space-y-12">
-      <section>
-        <p className="text-sm text-muted-foreground mb-3">
+    <div>
+      {/* --- Section 1: Category Name --- */}
+      <section className="container mx-auto px-4 pb-4">
+        {/* Tăng kích thước, độ đậm cho Category */}
+        <h2 className="text-lg font-bold text-foreground">
           {productData.categoryName}
-        </p>
+        </h2>
+      </section>
+      {/* --- --- */}
 
+      {/* --- Section 2: Product Info & Actions --- */}
+      <section>
         {/* --- Grid 2 cột chính --- */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,_2fr)_minmax(0,_1fr)] gap-8 lg:gap-12">
 
           {/* --- Cột Trái: Thông tin sách --- */}
-          <div>
+          <div className="border rounded-lg p-6">
             {/* Layout con bên trong cột trái: dùng Flexbox */}
             <div className="flex flex-col sm:flex-row gap-6 md:gap-8">
                {/* Khu vực Ảnh + Tác giả */}
@@ -182,12 +197,13 @@ const ProductDetailPage = () => {
                       onError={handleImageError} // Xử lý lỗi ảnh
                     />
                  </div>
-                 <p className="text-xs text-center text-muted-foreground">By {productData.authorName}</p>
+                 {/* Style lại Author */}
+                 <p className="text-sm text-center text-muted-foreground">By {productData.authorName}</p>
                </div>
 
                {/* Khu vực Text: Title, Desc, Accolades */}
                <div className="flex-grow space-y-4">
-                 <h1 className="text-2xl lg:text-3xl font-bold tracking-tight !mt-0"> {/* Thêm !mt-0 để ghi đè space-y */}
+                 <h1 className="text-xl lg:text-2xl font-bold tracking-tight !mt-0"> {/* Thêm !mt-0 để ghi đè space-y */}
                    {productData.bookTitle}
                  </h1>
                  <p className="text-muted-foreground text-sm leading-relaxed">
@@ -207,26 +223,28 @@ const ProductDetailPage = () => {
 
 
           {/* --- Cột Phải: Action (Giá, Số lượng, Nút) --- */}
-          <div className="lg:sticky lg:top-20 self-start">
+          <div className="border rounded-lg p-6 self-start">
              {/* Thêm style giống Card để tạo khối riêng biệt */}
-             <div className="space-y-6 rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+             <div className="space-y-4">
                 {/* Price */}
-                <div className="flex justify-start items-baseline gap-2">
-                   {/* Logic hiển thị giá gốc/giá bán */}
-                   {(productData.bookPrice && productData.bookPrice !== productData.finalPrice) && (
-                      <p className="text-lg text-muted-foreground line-through">
-                        ${productData.bookPrice.toFixed(2)}
-                      </p>
-                    )}
-                   <p className="text-3xl font-bold text-primary">
-                     ${productData.finalPrice.toFixed(2)}
-                   </p>
+                <div className='pb-4 border-b border-border bg-muted/30 -mx-6 px-6 rounded-t-lg'>
+                  <div className="flex justify-start items-baseline gap-2">
+                     {/* Logic hiển thị giá gốc/giá bán */}
+                     {(productData.bookPrice && productData.bookPrice !== productData.finalPrice) && (
+                        <p className="text-md text-muted-foreground line-through">
+                          ${productData.bookPrice.toFixed(2)}
+                        </p>
+                      )}
+                     <p className="text-xl font-bold text-primary">
+                       ${productData.finalPrice.toFixed(2)}
+                     </p>
+                  </div>
                 </div>
 
                 {/* Quantity */}
-                <div className="flex items-center space-x-3">
-                  <label htmlFor={`quantity-${id}`} className="text-sm font-medium">Quantity</label>
-                  <div className="flex items-center border rounded-md">
+                <div className="pt-2 space-x-3">
+                  <label htmlFor={`quantity-${id}`} className="text-xs font-medium text-muted-foreground block">Quantity</label>
+                  <div className="flex items-center border rounded-md overflow-hidden">
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -243,7 +261,7 @@ const ProductDetailPage = () => {
                        max={MAX_QUANTITY} // <-- Thêm thuộc tính max và dùng hằng số
                        value={quantity}
                        onChange={handleQuantityChange}
-                       className="h-9 w-14 text-center border-y-0 border-x focus-visible:ring-0"
+                       className="h-9 px-2 text-center border-none focus-visible:ring-0 text-base flex-grow min-w-[40px]"
                     />
                     <Button 
                      variant="ghost" 

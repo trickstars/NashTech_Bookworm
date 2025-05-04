@@ -35,106 +35,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   // --- ---
 
-  // Hàm load và kiểm tra token khi mount
-  const initializeAuth = useCallback(async () => {
-    console.log("Initializing Auth...");
-    setIsLoading(true);
-    const storedAccessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-    // const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY); // Chưa cần dùng refresh ở đây
-
-    if (storedAccessToken) {
-      console.log("Found access token, validating...");
-      const userData = await getMe(storedAccessToken); // Gọi API /me để lấy thông tin user
-      if (userData) {
-        console.log("Token valid, user data:", userData);
-        setUser(userData);
-        setAccessToken(storedAccessToken);
-        setIsAuthenticated(true);
-      } else {
-        // Token không hợp lệ hoặc hết hạn
-        console.log("Token invalid or expired, clearing stored tokens.");
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-        setUser(null);
-        setAccessToken(null);
-        setIsAuthenticated(false);
-        // TODO: Có thể thử gọi API refresh token ở đây nếu muốn tự động gia hạn
-      }
-    } else {
-        console.log("No access token found.");
-        setIsAuthenticated(false); // Đảm bảo trạng thái là false nếu không có token
-    }
-    setIsLoading(false);
-    console.log("Auth initialized.");
-  }, []);
-
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]); // Chỉ chạy 1 lần khi mount
-
-  // Hàm đăng nhập
-  const login = async (emailAsUsername: string, password: string): Promise<boolean> => {
-    setIsLoading(true); // Báo đang xử lý login
-    try {
-      const tokenData = await loginUser(emailAsUsername, password); // Gọi API login
-
-      // Lưu token vào localStorage
-      localStorage.setItem(ACCESS_TOKEN_KEY, tokenData.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokenData.refreshToken);
-
-      // --- Đóng modal sau khi login thành công ---
-      setIsLoginModalOpen(false);
-
-      // Lấy thông tin user ngay sau khi login thành công
-      const userData = await getMe(tokenData.accessToken);
-
-      if (userData) {
-         // Cập nhật state context
-        setAccessToken(tokenData.accessToken);
-        setUser(userData);
-        setIsAuthenticated(true);
-        console.log("Login successful, user:", userData);
-
-        // --- QUAN TRỌNG: Xử lý Cart ---
-        // Di chuyển giỏ hàng của guest (nếu có) sang giỏ hàng của user
-        const storedCart = localStorage.getItem(LOCAL_STORAGE_CART_KEY);
-        if (storedCart) {
-            try {
-                const parsedCart = JSON.parse(storedCart);
-                const guestCart = parsedCart[GUEST_USER_ID];
-                if (guestCart && Object.keys(guestCart).length > 0) {
-                    const userCartKey = String(userData.id);
-                    // Gộp giỏ hàng guest vào user (có thể cần logic merge phức tạp hơn nếu xung đột)
-                    const userCart = parsedCart[userCartKey] || {};
-                    parsedCart[userCartKey] = { ...guestCart, ...userCart }; // Ưu tiên item trong userCart nếu trùng? Cần xem lại logic merge!
-                    // Xóa giỏ hàng guest
-                    delete parsedCart[GUEST_USER_ID];
-                    localStorage.setItem(LOCAL_STORAGE_CART_KEY, JSON.stringify(parsedCart));
-                     console.log("Guest cart merged/moved to user cart for ID:", userCartKey);
-                }
-            } catch (e) { console.error("Error merging guest cart:", e); }
-        }
-        // --- ---
-
-        setIsLoading(false);
-        return true; // Login thành công
-
-      } else {
-         // Nếu không lấy được user data sau khi có token -> lỗi
-         throw new Error("Login succeeded but failed to fetch user data.");
-      }
-      setIsLoading(false); // Đặt lại isLoading của context
-      return true;
-
-    } catch (error: any) {
-      console.error("Login failed:", error.message);
-      // Xóa token cũ nếu có lỗi đăng nhập
-      logout(); // Gọi hàm logout để dọn dẹp
-      setIsLoading(false);
-      throw error; // Ném lại lỗi để component Form xử lý và hiển thị
-    }
-  };
-
   // Hàm đăng xuất
   const logout = useCallback(() => {
     console.log("Logging out...");
@@ -156,6 +56,109 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Có thể gọi API logout backend ở đây nếu cần (để vô hiệu hóa refresh token phía server)
     // await logoutApi();
   }, []);
+
+  // Hàm load và kiểm tra token khi mount
+  const initializeAuth = useCallback(async () => {
+    console.log("Initializing Auth...");
+    setIsLoading(true);
+    const storedAccessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    // const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY); // Chưa cần dùng refresh ở đây
+
+    if (storedAccessToken) {
+      console.log("Found access token, validating...");
+      const userData = await getMe(); // Gọi API /me để lấy thông tin user
+      if (userData) {
+        console.log("Token valid, user data:", userData);
+        setUser(userData);
+        setAccessToken(storedAccessToken);
+        setIsAuthenticated(true);
+      } else {
+        // Token không hợp lệ hoặc hết hạn
+        // console.log("Token invalid or expired, clearing stored tokens.");
+        // localStorage.removeItem(ACCESS_TOKEN_KEY);
+        // localStorage.removeItem(REFRESH_TOKEN_KEY);
+        // setUser(null);
+        // setAccessToken(null);
+        // setIsAuthenticated(false);
+        logout()
+        // TODO: Có thể thử gọi API refresh token ở đây nếu muốn tự động gia hạn
+      }
+    } else {
+        console.log("No access token found.");
+        setIsAuthenticated(false); // Đảm bảo trạng thái là false nếu không có token
+    }
+    setIsLoading(false);
+    console.log("Auth initialized.");
+  }, [logout]);
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]); // Chỉ chạy 1 lần khi mount
+
+  // Hàm đăng nhập
+  const login = async (emailAsUsername: string, password: string): Promise<boolean> => {
+    // setIsLoading(true); // Báo đang xử lý login
+    try {
+      const tokenData = await loginUser(emailAsUsername, password); // Gọi API login
+
+      localStorage.setItem(ACCESS_TOKEN_KEY, tokenData.accessToken);
+      localStorage.setItem(REFRESH_TOKEN_KEY, tokenData.refreshToken);
+      // Lấy thông tin user ngay sau khi login thành công
+      const userData = await getMe();
+
+      if (userData) {
+         // Cập nhật state context
+        setAccessToken(tokenData.accessToken);
+        setUser(userData);
+        setIsAuthenticated(true);
+        console.log("Login successful, user:", userData);
+
+        // --- QUAN TRỌNG: Xử lý Cart ---
+        // Di chuyển giỏ hàng của guest (nếu có) sang giỏ hàng của user
+        const storedCart = localStorage.getItem(LOCAL_STORAGE_CART_KEY);
+        if (storedCart) {
+            try {
+              // merge cart
+                const parsedCart = JSON.parse(storedCart);
+                const guestCart = parsedCart[GUEST_USER_ID];
+                if (guestCart && Object.keys(guestCart).length > 0) {
+                    const userCartKey = String(userData.id);
+                    // Gộp giỏ hàng guest vào user (có thể cần logic merge phức tạp hơn nếu xung đột)
+                    const userCart = parsedCart[userCartKey] || {};
+                    parsedCart[userCartKey] = { ...guestCart, ...userCart }; // Ưu tiên item trong userCart nếu trùng? Cần xem lại logic merge!
+                    // Xóa giỏ hàng guest
+                    delete parsedCart[GUEST_USER_ID];
+                    localStorage.setItem(LOCAL_STORAGE_CART_KEY, JSON.stringify(parsedCart));
+                     console.log("Guest cart merged/moved to user cart for ID:", userCartKey);
+                }
+            } catch (e) { console.error("Error merging guest cart:", e); }
+        }
+        // --- ---
+        setIsLoginModalOpen(false);
+        // setIsLoading(false);
+        return true; // Login thành công
+
+      } else {
+         // Nếu không lấy được user data sau khi có token -> lỗi
+         throw new Error("Login succeeded but failed to fetch user data.");
+      }
+      // setIsLoading(false); // Đặt lại isLoading của context
+      // return true;
+
+    } catch (error: any) {
+      console.error("Login failed:", error.message);
+      // Xóa token cũ nếu có lỗi đăng nhập
+      // logout(); // Gọi hàm logout để dọn dẹp
+      // setIsLoading(false);
+      localStorage.removeItem(ACCESS_TOKEN_KEY); // Xóa token nếu lưu tạm trước đó (dù không nên)
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      setUser(null);
+      setAccessToken(null);
+      setIsAuthenticated(false); // Đảm bảo state là false
+      // setIsLoginModalOpen(false); // Đóng modal nếu đang mở khi có lỗi
+      throw error; // Ném lại lỗi để component Form xử lý và hiển thị
+    }
+  };
 
   // --- Hàm mở/đóng Modal ---
   const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
