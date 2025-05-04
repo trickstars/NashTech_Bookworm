@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (storedAccessToken) {
       console.log("Found access token, validating...");
-      const userData = await getMe(storedAccessToken); // Gọi API /me để lấy thông tin user
+      const userData = await getMe(); // Gọi API /me để lấy thông tin user
       if (userData) {
         console.log("Token valid, user data:", userData);
         setUser(userData);
@@ -101,12 +101,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const tokenData = await loginUser(emailAsUsername, password); // Gọi API login
 
+      localStorage.setItem(ACCESS_TOKEN_KEY, tokenData.accessToken);
+      localStorage.setItem(REFRESH_TOKEN_KEY, tokenData.refreshToken);
       // Lấy thông tin user ngay sau khi login thành công
-      const userData = await getMe(tokenData.accessToken);
+      const userData = await getMe();
 
       if (userData) {
-        localStorage.setItem(ACCESS_TOKEN_KEY, tokenData.accessToken);
-        localStorage.setItem(REFRESH_TOKEN_KEY, tokenData.refreshToken);
          // Cập nhật state context
         setAccessToken(tokenData.accessToken);
         setUser(userData);

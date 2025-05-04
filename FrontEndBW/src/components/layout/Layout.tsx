@@ -12,7 +12,12 @@ const Layout = () => {
         <Outlet /> {/* Renders the matched child route component */}
       </main>
       <Footer />
-      <Toaster richColors position="top-right" /> {/* Thêm Toaster ở đây */}
+      <Toaster 
+        richColors 
+        position="top-right"
+        closeButton={true}
+        duration={10000} 
+      /> {/* Thêm Toaster ở đây */}
     </div>
   );
 };

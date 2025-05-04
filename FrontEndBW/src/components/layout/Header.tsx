@@ -26,6 +26,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"; // Cho menu user
+import ToastWithCountdown from '../common/ToastWithCountDown';
 
 const Header = () => {
   // Lấy trực tiếp giá trị cartItemCount từ context
@@ -52,7 +53,11 @@ const Header = () => {
     try {
         const success = await login(loginEmail, loginPassword);
         if (success) {
-            toast.success("Login successful!");
+          toast.success(
+            <ToastWithCountdown message="Login successfully!" />
+            // Không cần set duration ở đây nữa vì Toaster đã có mặc định 10s
+            // { duration: 10000, closeButton: true } // Các options này giờ đã set ở Toaster
+          );
             // setIsLoginDialogOpen(false); // Đóng dialog khi thành công
             setLoginEmail(''); // Reset form
             setLoginPassword('');
@@ -60,7 +65,12 @@ const Header = () => {
         // Không cần xử lý lỗi ở đây nữa vì hàm login đã throw error
     } catch (error: any) {
          setLoginError(error.message || "Login failed. Please check your credentials.");
-         toast.error(error.message || "Login failed."); // Hiển thị toast lỗi
+        //  toast.error(error.message || "Login failed."); // Hiển thị toast lỗi
+         toast.error(
+          <ToastWithCountdown message={error.message || "Login failed."} />
+          // Không cần set duration ở đây nữa vì Toaster đã có mặc định 10s
+          // { duration: 10000, closeButton: true } // Các options này giờ đã set ở Toaster
+      );
     } finally {
          setIsLoggingIn(false);
     }

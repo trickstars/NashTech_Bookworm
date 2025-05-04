@@ -62,8 +62,8 @@ export const refreshTokenApi = async (currentRefreshToken: string): Promise<Toke
 /**
  * Gọi API để lấy thông tin user đang đăng nhập bằng Access TokenResponse.
  */
-export const getMe = async (token: string): Promise<User | null> => {
-  if (!token) return null;
+export const getMe = async (): Promise<User | null> => {
+  // if (!token) return null;
   try {
     const response = await authApiClient.get<User>('/auth/users/me');
     // Axios interceptor sẽ tự camelize response keys (id, email, fullName...)
