@@ -2,6 +2,8 @@ from sqlmodel import Field, SQLModel, Relationship, CheckConstraint
 # from typing import Optional, list
 from datetime import date, datetime
 
+from app.schemas.order import OrderItemBase
+
 from .schemas.author import AuthorBase
 from .schemas.category import CategoryBase
 from .schemas.book import BookBase
@@ -78,12 +80,10 @@ class Order(SQLModel, table=True):
     user: User = Relationship(back_populates="orders")
     items: list["OrderItem"] = Relationship(back_populates="order", passive_deletes=True) # co the dung cascase?
 
-class OrderItem(SQLModel, table=True):
+class OrderItem(OrderItemBase, table=True):
+    __tablename__ = "order_item"
     id: int | None = Field(default=None, primary_key=True)
     order_id: int = Field(foreign_key="order.id", ondelete="CASCADE")
-    book_id: int = Field(foreign_key="book.id")
-    quantity: int = Field(ge=1, le=8)
-    price: float = Field() # co set None duoc khong?
 
     order: Order | None = Relationship(back_populates="items")
     book: Book | None = Relationship()

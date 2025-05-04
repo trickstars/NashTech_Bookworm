@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext'; // <-- Import useAuth
 import { Link, NavLink } from 'react-router-dom'; // Import Link (or NavLink for active styles)
@@ -30,9 +30,10 @@ import {
 const Header = () => {
   // Lấy trực tiếp giá trị cartItemCount từ context
   const { cartItemCount } = useCart();
-  const { isAuthenticated, user, logout, login } = useAuth(); // Lấy state và hàm từ AuthContext
+  // Lấy state và hàm modal từ context
+  const { isAuthenticated, user, logout, login, isLoginModalOpen, openLoginModal, closeLoginModal } = useAuth();
 
-  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false); // State đóng/mở Dialog
+  // const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false); // State đóng/mở Dialog
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -52,14 +53,14 @@ const Header = () => {
         const success = await login(loginEmail, loginPassword);
         if (success) {
             toast.success("Login successful!");
-            setIsLoginDialogOpen(false); // Đóng dialog khi thành công
+            // setIsLoginDialogOpen(false); // Đóng dialog khi thành công
             setLoginEmail(''); // Reset form
             setLoginPassword('');
         }
         // Không cần xử lý lỗi ở đây nữa vì hàm login đã throw error
     } catch (error: any) {
          setLoginError(error.message || "An unknown error occurred.");
-         toast.error(error.message || "Login failed."); // Hiển thị toast lỗi
+        //  toast.error(error.message || "Login failed."); // Hiển thị toast lỗi
     } finally {
          setIsLoggingIn(false);
     }
@@ -136,15 +137,12 @@ const Header = () => {
 
           ) : (
             // --- User Not Logged In: Hiển thị Sign In Dialog Trigger ---
-            <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
+            // Dialog giờ được kiểm soát bởi state từ context
+            <Dialog open={isLoginModalOpen} onOpenChange={(open) => open ? openLoginModal() : closeLoginModal()}>
               <DialogTrigger asChild>
-                 {/* Dùng NavLink hoặc Button tùy ý */}
-                {/* <NavLink to="#" className={getNavLinkClass({ isActive: false })} onClick={(e) => e.preventDefault()}>
+                 <Button variant="ghost" size="sm" className="text-sm font-medium text-foreground/60 transition-colors hover:text-foreground/80">
                     Sign In
-                </NavLink> */}
-                {/* Hoặc dùng Button: */}
-                <Button variant="ghost" size="sm">Sign In</Button>
-               
+                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
@@ -159,11 +157,12 @@ const Header = () => {
                       <Label htmlFor="login-email" className="text-right">Email</Label>
                       <Input
                         id="login-email"
-                        type="email" // Dùng type email
+                        type="email"
                         placeholder="your@email.com"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                         required
+                        disabled={isLoggingIn}
                         className="col-span-3"
                       />
                     </div>
@@ -175,6 +174,7 @@ const Header = () => {
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         required
+                        disabled={isLoggingIn}
                         className="col-span-3"
                       />
                     </div>
@@ -183,10 +183,6 @@ const Header = () => {
                     )}
                   </div>
                   <DialogFooter>
-                    {/* Không cần DialogClose nếu submit thành công sẽ tự đóng */}
-                    {/* <DialogClose asChild>
-                       <Button type="button" variant="secondary">Cancel</Button>
-                    </DialogClose> */}
                     <Button type="submit" disabled={isLoggingIn}>
                       {isLoggingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Sign In

@@ -13,6 +13,11 @@ interface AuthContextType {
   isLoading: boolean; // Trạng thái loading khi kiểm tra token lúc đầu
   login: (emailAsUsername: string, password: string) => Promise<boolean>; // Trả về true/false
   logout: () => void;
+  // --- Thêm State và Hàm cho Modal ---
+  isLoginModalOpen: boolean;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
+  // --- ---
 }
 
 // --- localStorage Keys ---
@@ -26,6 +31,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // Bắt đầu là true
+  // --- State cho Dialog ---
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  // --- ---
 
   // Hàm load và kiểm tra token khi mount
   const initializeAuth = useCallback(async () => {
@@ -74,6 +82,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem(ACCESS_TOKEN_KEY, tokenData.accessToken);
       localStorage.setItem(REFRESH_TOKEN_KEY, tokenData.refreshToken);
 
+      // --- Đóng modal sau khi login thành công ---
+      setIsLoginModalOpen(false);
+
       // Lấy thông tin user ngay sau khi login thành công
       const userData = await getMe(tokenData.accessToken);
 
@@ -107,10 +118,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         setIsLoading(false);
         return true; // Login thành công
+
       } else {
          // Nếu không lấy được user data sau khi có token -> lỗi
          throw new Error("Login succeeded but failed to fetch user data.");
       }
+      setIsLoading(false); // Đặt lại isLoading của context
+      return true;
 
     } catch (error: any) {
       console.error("Login failed:", error.message);
@@ -143,14 +157,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // await logoutApi();
   }, []);
 
+  // --- Hàm mở/đóng Modal ---
+  const openLoginModal = useCallback(() => setIsLoginModalOpen(true), []);
+  const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), []);
+  // --- ---
+
+
+  // --- Cập nhật context value ---
   const value = {
-      user,
-      accessToken,
-      isAuthenticated,
-      isLoading,
-      login,
-      logout
-  };
+    user, accessToken, isAuthenticated, isLoading, login, logout,
+    isLoginModalOpen, openLoginModal, closeLoginModal // Thêm vào value
+};
+// --- ---
 
   // Chỉ render children khi đã load xong trạng thái auth ban đầu
   return (

@@ -1,6 +1,6 @@
 // src/api/bookApi.ts
 import { Author } from '@/types/author';
-import apiClient from './apiClient';
+import {apiClient} from './apiClient';
 // Import kiểu Book từ nơi bạn định nghĩa
 import type { Book, BookDetail } from '@/types/book'; // Giả sử bạn dùng alias @ -> src
 import type { Category } from '@/types/category';

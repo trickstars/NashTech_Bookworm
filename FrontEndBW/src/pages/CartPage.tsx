@@ -2,9 +2,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Minus, Plus, X } from 'lucide-react'; // Import icons
+import { Loader2, Minus, Plus, X } from 'lucide-react'; // Import icons
 import { useCart } from '@/contexts/CartContext'; // Import useCart
 import { Link } from 'react-router-dom'; // Import Link cho nút Place Order (ví dụ)
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { createOrder } from '@/api/orderApi';
+import { toast } from 'sonner';
+import axios from 'axios';
+import { OrderItem } from '@/types/order';
 
 const MAX_ITEM_QUANTITY = 8;
 const MIN_QUANTITY = 1;
@@ -22,8 +28,14 @@ const CartPage = () => {
     updateItemQuantity,
     removeItem,
     getCartTotal,
-    cartItemCount // Lấy số lượng item mới nhất
+    cartItemCount, // Lấy số lượng item mới nhất
+    clearCart
    } = useCart();
+   const { isAuthenticated, openLoginModal } = useAuth(); // Lấy trạng thái auth và hàm mở modal
+
+  // State cho việc đặt hàng
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
    const subtotal = getCartTotal();
    const totalItemsCount = cartItemCount; // Lấy tổng số lượng
@@ -46,6 +58,84 @@ const CartPage = () => {
     event.currentTarget.onerror = null;
     event.currentTarget.src = fallbackImageUrl;
   };
+
+   // --- Handler cho nút Place Order ---
+   const handlePlaceOrder = async () => {
+    setOrderError(null); // Reset lỗi cũ
+
+    // 1. Kiểm tra đăng nhập
+    if (!isAuthenticated) {
+        toast.error("Please sign in to place your order.");
+        openLoginModal(); // Mở modal đăng nhập
+        return;
+    }
+
+    // 2. Kiểm tra giỏ hàng rỗng
+    if (!cartItems || cartItems.length === 0) {
+        toast.error("Your cart is empty.");
+        return;
+    }
+
+    setIsPlacingOrder(true); // Bắt đầu loading
+
+    // 3. Chuẩn bị dữ liệu gửi đi (chỉ cần bookId và quantity)
+    const orderItemsPayload: OrderItem[] = cartItems.map(item => ({
+        bookId: item.bookDetails.id, // Đảm bảo ID là number nếu backend yêu cầu
+        quantity: item.quantity,
+        price: item.bookDetails.finalPrice
+        // Không gửi price vì backend sẽ tự lấy/xác thực
+    }));
+
+    try {
+        // 4. Gọi API tạo order
+        const createdOrder = await createOrder({ items: orderItemsPayload });
+        console.log("Order created:", createdOrder);
+
+        // 5. Đặt hàng thành công
+        toast.success("Order placed successfully!");
+        clearCart(); // Xóa giỏ hàng sau khi đặt thành công
+
+        // 6. (Tùy chọn) Điều hướng đến trang xác nhận hoặc lịch sử đơn hàng
+        // navigate(`/order-confirmation/${createdOrder.id}`);
+
+    } catch (error: any) {
+         // 7. Xử lý lỗi từ API (ví dụ: item not found, lỗi server...)
+         console.error("Failed to place order:", error);
+         let errorMessage = "An error occurred while placing the order.";
+            // --- KIỂM TRA LỖI CỤ THỂ TỪ BACKEND ---
+          if (axios.isAxiosError(error) && error.response) {
+            const detail = error.response.data.detail;
+            console.log("Detai;", detail)
+            // Kiểm tra mã lỗi và sự tồn tại của missing_book_id
+            // --- SỬA ĐỔI LOGIC TẠO ERROR MESSAGE ---
+            if (detail.error_code === "BOOK_NOT_FOUND" && detail.missing_book_id != null) {
+              const missingId = detail.missing_book_id;
+              const missingBook = cartItems.find(item => item.bookDetails.id == missingId);
+
+              if (missingBook) {
+                  // Tạo message theo format yêu cầu
+                  errorMessage = `"${missingBook.bookDetails.bookTitle}" is not available.`;
+              } else {
+                  // Fallback nếu không tìm thấy tên sách (ít xảy ra)
+                  errorMessage = `A book (ID: ${missingId}) in your cart is not available.`;
+              }
+          // --- KẾT THÚC SỬA ĐỔI ---
+            } else if (typeof detail === 'string') {
+                errorMessage = detail;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+         } else if (error instanceof Error) {
+              errorMessage = error.message;
+         }
+         // --- Kết thúc xử lý lỗi ---
+         setOrderError(errorMessage); // Vẫn có thể lưu lỗi vào state nếu cần
+         toast.error(errorMessage, { duration: 5000 }); // Hiển thị toast lỗi lâu hơn một chút
+    } finally {
+         setIsPlacingOrder(false); // Kết thúc loading
+    }
+};
+ // --- ---
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,_2fr)_minmax(0,_1fr)] gap-8 xl:gap-12">
@@ -194,15 +284,22 @@ const CartPage = () => {
                </div>
             </CardContent>
             <CardFooter>
-               {/* Nút Place order có thể là Link hoặc Button tùy logic */}
-              <Button size="lg" className="w-full" >
-                 {/* <Link to="/checkout"> Place order </Link> */}
-                 Place order
+               {/* --- Cập nhật nút Place order --- */}
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={handlePlaceOrder}
+                disabled={isPlacingOrder} // Disable khi đang xử lý
+              >
+                {isPlacingOrder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Place order
               </Button>
+              {/* --- --- */}
             </CardFooter>
           </Card>
         </div>
       )}
+      {/* Hiển thị nếu giỏ hàng rỗng */}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 // src/api/authApi.ts
-import apiClient from './apiClient';
+import {apiClient, authApiClient} from './apiClient';
 // Import các kiểu dữ liệu cần thiết
 import type { TokenResponse } from '@/types/token'; // Giả sử bạn định nghĩa TokenResponse trong types
 import type { User } from '@/types/user'; // Giả sử bạn định nghĩa User (chỉ chứa id, email, fullName...)
@@ -43,10 +43,7 @@ export const loginUser = async (emailAsUsername: string, password: string): Prom
 export const getMe = async (token: string): Promise<User | null> => {
   if (!token) return null;
   try {
-    const response = await apiClient.get<User>(ENDPOINTS.GET_ME, {
-      headers: { Authorization: `Bearer ${token}` } // Gửi token trực tiếp ở đây
-      // Hoặc cấu hình interceptor trong apiClient để tự động thêm header này
-    });
+    const response = await authApiClient.get<User>('/auth/users/me');
     // Axios interceptor sẽ tự camelize response keys (id, email, fullName...)
     return response.data;
   } catch (error) {
