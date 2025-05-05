@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.tsx (Ví dụ đơn giản)
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { loginUser, getMe } from '@/api/authApi'; // Import API functions
+import { loginUser, getMe, logoutApi } from '@/api/authApi'; // Import API functions
 // import type { TokenResponse } from '@/types/token';
 import type { User } from '@/types/user'; // Schema User trả về từ /me
 import { LOCAL_STORAGE_CART_KEY, GUEST_USER_ID } from './CartContext';
@@ -22,7 +22,7 @@ interface AuthContextType {
 
 // --- localStorage Keys ---
 const ACCESS_TOKEN_KEY = 'accessToken';
-const REFRESH_TOKEN_KEY = 'refreshToken'
+// const REFRESH_TOKEN_KEY = 'refreshToken'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -36,11 +36,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // --- ---
 
   // Hàm đăng xuất
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     console.log("Logging out...");
     // Xóa token khỏi localStorage
+    const currentToken = localStorage.getItem(ACCESS_TOKEN_KEY); // Lấy token để gọi API logout
+
+    // Gọi API logout backend ĐỂ SERVER XÓA COOKIE
+    if (currentToken) { // Chỉ gọi logout API nếu đang có vẻ đăng nhập
+         try {
+             await logoutApi(); // Hàm này dùng authApiClient nên token sẽ được gửi tự động
+         } catch (e) {
+             console.error("Logout API call failed (ignoring):", e);
+         }
+    }
+
     localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    // localStorage.removeItem(REFRESH_TOKEN_KEY);
 
     // Reset state context
     setUser(null);
@@ -57,12 +68,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // await logoutApi();
   }, []);
 
+  // Lắng nghe sự kiện để logout
+  useEffect(() => {
+    const handleSessionExpired = () => {
+        console.log("AuthContext: Received sessionExpired event. Logging out.");
+        logout(); // Gọi hàm logout nội bộ để reset state
+    };
+    window.addEventListener('sessionExpired', handleSessionExpired);
+    return () => { window.removeEventListener('sessionExpired', handleSessionExpired); };
+}, [logout]); // Dependency là hàm logout
+
   // Hàm load và kiểm tra token khi mount
   const initializeAuth = useCallback(async () => {
     console.log("Initializing Auth...");
     setIsLoading(true);
     const storedAccessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
     // const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY); // Chưa cần dùng refresh ở đây
+    let userData: User | null = null;
 
     if (storedAccessToken) {
       console.log("Found access token, validating...");
@@ -74,12 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthenticated(true);
       } else {
         // Token không hợp lệ hoặc hết hạn
-        // console.log("Token invalid or expired, clearing stored tokens.");
-        // localStorage.removeItem(ACCESS_TOKEN_KEY);
-        // localStorage.removeItem(REFRESH_TOKEN_KEY);
-        // setUser(null);
-        // setAccessToken(null);
-        // setIsAuthenticated(false);
+        console.log("No valid session found initially.");
         logout()
         // TODO: Có thể thử gọi API refresh token ở đây nếu muốn tự động gia hạn
       }
@@ -102,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const tokenData = await loginUser(emailAsUsername, password); // Gọi API login
 
       localStorage.setItem(ACCESS_TOKEN_KEY, tokenData.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokenData.refreshToken);
+      // localStorage.setItem(REFRESH_TOKEN_KEY, tokenData.refreshToken);
       // Lấy thông tin user ngay sau khi login thành công
       const userData = await getMe();
 
@@ -151,7 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // logout(); // Gọi hàm logout để dọn dẹp
       // setIsLoading(false);
       localStorage.removeItem(ACCESS_TOKEN_KEY); // Xóa token nếu lưu tạm trước đó (dù không nên)
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      // localStorage.removeItem(REFRESH_TOKEN_KEY);
       setUser(null);
       setAccessToken(null);
       setIsAuthenticated(false); // Đảm bảo state là false
