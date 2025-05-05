@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlmodel import select, case, and_, or_, desc, func
+from sqlmodel import Session, select, case, and_, or_, desc, func
 from sqlalchemy import Select, Subquery
 from sqlalchemy.orm import aliased
 # from sqlalchemy import label
@@ -7,16 +7,16 @@ from sqlalchemy.orm import aliased
 from datetime import date
 import math
 
-from ..dependencies.db_dep import SessionDep
+# from ..dependencies.db_dep import Session
 
 from ..models import Book, Category, Review, Discount, Author
 
-from ..schemas.query_params import FilterParam, OrderParam, PaginationParam
+from ..schemas.query_params import BookFilterParam, BookOrderParam, PaginationParam
 # from ..schemas.book import BookCard
 
-from ..constants.enums import Featured, SortFactor, SortOrder
+from ..constants.enums import Featured, BookSortFactor, SortOrder
 
-async def get_books(filter_param: FilterParam, order_param: OrderParam, pagination_param: PaginationParam, session: SessionDep):
+async def get_books(filter_param: BookFilterParam, order_param: BookOrderParam, pagination_param: PaginationParam, session: Session):
     """
     Get books with optional filtering, ordering, and pagination.
     """
@@ -75,7 +75,7 @@ async def get_books(filter_param: FilterParam, order_param: OrderParam, paginati
     return books, total_books, total_pages, current_page
 
 # Special get books
-async def get_featured_books(featured_type: Featured, session: SessionDep):
+async def get_featured_books(featured_type: Featured, session: Session):
     """
     Get recommended books
     """
@@ -115,7 +115,7 @@ async def get_featured_books(featured_type: Featured, session: SessionDep):
     # print("Books", books)
     return books
 
-async def get_book_by_id(book_id: int, session: SessionDep) -> any:
+async def get_book_by_id(book_id: int, session: Session) -> any:
     """
     Get book by ID
     """
@@ -143,7 +143,7 @@ async def get_book_by_id(book_id: int, session: SessionDep) -> any:
     return book    
 
 # Filtering
-def get_books_filtered(query: Select, filter_param: FilterParam) -> Subquery:
+def get_books_filtered(query: Select, filter_param: BookFilterParam) -> Subquery:
     """
     Get books filtered by author, category, and rating
     """
@@ -157,17 +157,17 @@ def get_books_filtered(query: Select, filter_param: FilterParam) -> Subquery:
 
 
 # Sorting
-def get_books_ordered_by(query: Subquery, orderParam: OrderParam) -> Subquery:
+def get_books_ordered_by(query: Subquery, orderParam: BookOrderParam) -> Subquery:
     """
     Get books ordered by a specific parameter
     """
     print("Order param", orderParam)
-    print("Enum sale", SortFactor.SALE)
-    if orderParam.order_by == SortFactor.SALE:
+    print("Enum sale", BookSortFactor.SALE)
+    if orderParam.order_by == BookSortFactor.SALE:
         return get_books_ordered_by_sale(query)
-    elif orderParam.order_by == SortFactor.POPULARITY:
+    elif orderParam.order_by == BookSortFactor.POPULARITY:
         return get_books_ordered_by_popularity(query)
-    elif orderParam.order_by == SortFactor.PRICE:
+    elif orderParam.order_by == BookSortFactor.PRICE:
         return get_books_ordered_by_final_price(query, True if orderParam.order == SortOrder.ASCENDING else False)
     else:
         raise HTTPException(status_code=400, detail="Invalid order parameter")

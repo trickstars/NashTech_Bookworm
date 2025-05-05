@@ -4,7 +4,7 @@
 // Các key đã được camelCase bởi axios/humps
 export interface TokenResponse {
     accessToken: string;
-    refreshToken: string;
+    // refreshToken: string;
     tokenType: string; // Thường là 'bearer'
   }
   

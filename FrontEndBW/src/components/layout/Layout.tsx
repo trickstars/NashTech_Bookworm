@@ -16,7 +16,7 @@ const Layout = () => {
         richColors 
         position="top-right"
         closeButton={true}
-        duration={10000} 
+        duration={5000} 
       /> {/* Thêm Toaster ở đây */}
     </div>
   );

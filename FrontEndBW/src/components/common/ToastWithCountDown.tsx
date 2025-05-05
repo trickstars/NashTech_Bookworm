@@ -8,7 +8,7 @@ interface ToastWithCountdownProps {
 
 const ToastWithCountdown: React.FC<ToastWithCountdownProps> = ({
   message,
-  initialDurationSeconds = 10 // Mặc định là 10 giây
+  initialDurationSeconds = 5 // Mặc định là 10 giây
 }) => {
   const [countdown, setCountdown] = useState(initialDurationSeconds);
 

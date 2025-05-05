@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+// import { Separator } from "@/components/ui/separator";
 import { Minus, Plus } from 'lucide-react';
 // Import API function và type mới
 import { getBookById } from '@/api/bookApi'; // Hoặc productApi

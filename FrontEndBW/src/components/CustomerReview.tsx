@@ -33,8 +33,8 @@ import {
 } from "@/components/ui/pagination";
 import { Star, ChevronDown, Loader2 } from 'lucide-react';
 // Giả sử API function và types được import đúng đường dẫn
-// import { getReviewsByProductId } from '@/api/reviewApi';
-// import type { Review, ReviewListResponse, ReviewParams } from '@/types/review';
+import { getReviewsByProductId, postReview } from '@/api/reviewApi';
+import type { Review, ReviewListResponse, ReviewParams, ReviewCreatePayload } from '@/types/review';
 import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 
@@ -51,35 +51,35 @@ const DEFAULT_CURRENT_PAGE = 1;
 
 // --- *** THÊM DỮ LIỆU GIẢ (PLACEHOLDER DATA) *** ---
 // Định nghĩa lại kiểu dữ liệu tạm thời ở đây nếu bạn đã comment out import
-interface ReviewPlaceholder {
-    id: number | string;
-    title: string;
-    rating: number;
-    date: string;
-    text: string;
-  }
-  interface RatingCount { stars: number; count: number; }
+// interface ReviewPlaceholder {
+//     id: number | string;
+//     title: string;
+//     rating: number;
+//     date: string;
+//     text: string;
+//   }
+//   interface RatingCount { stars: number; count: number; }
   
-  const placeholderReviewsResponse = {
-    items: [
-      { id: 'r1', title: 'Absolutely Fantastic!', rating: 5, date: '2025-05-01T10:00:00Z', text: 'This book was amazing, I couldn\'t put it down. Highly recommended for everyone!' },
-      { id: 'r2', title: 'Great Read', rating: 4, date: '2025-04-28T14:30:00Z', text: 'Enjoyed this book a lot. The characters were well-developed and the plot kept me engaged.' },
-      { id: 'r3', title: 'Decent, but slow start', rating: 3, date: '2025-04-25T09:15:00Z', text: 'It took a while for the story to pick up, but the ending was satisfying. Overall a decent read.' },
-      { id: 'r4', title: 'Good story', rating: 5, date: '2025-04-22T11:00:00Z', text: 'Really captivating narrative. Loved the world-building.' },
-      { id: 'r5', title: 'Not my cup of tea', rating: 2, date: '2025-04-20T18:45:00Z', text: 'I couldn\'t really get into this one, unfortunately. The writing style wasn\'t for me.' },
-    ] as ReviewPlaceholder[], // Dùng type placeholder
-    totalItems: 25, // Tổng số review giả
-    totalPages: 3,  // Tổng số trang giả (25 items / 10 limit)
-    currentPage: 1, // Trang hiện tại giả
-    averageRating: 4.1, // Rating trung bình giả
-    ratingCounts: [ // Số lượng giả cho mỗi rating
-      { stars: 5, count: 15 },
-      { stars: 4, count: 5 },
-      { stars: 3, count: 3 },
-      { stars: 2, count: 1 },
-      { stars: 1, count: 1 },
-    ] as RatingCount[],
-  };
+//   const placeholderReviewsResponse = {
+//     items: [
+//       { id: 'r1', title: 'Absolutely Fantastic!', rating: 5, date: '2025-05-01T10:00:00Z', text: 'This book was amazing, I couldn\'t put it down. Highly recommended for everyone!' },
+//       { id: 'r2', title: 'Great Read', rating: 4, date: '2025-04-28T14:30:00Z', text: 'Enjoyed this book a lot. The characters were well-developed and the plot kept me engaged.' },
+//       { id: 'r3', title: 'Decent, but slow start', rating: 3, date: '2025-04-25T09:15:00Z', text: 'It took a while for the story to pick up, but the ending was satisfying. Overall a decent read.' },
+//       { id: 'r4', title: 'Good story', rating: 5, date: '2025-04-22T11:00:00Z', text: 'Really captivating narrative. Loved the world-building.' },
+//       { id: 'r5', title: 'Not my cup of tea', rating: 2, date: '2025-04-20T18:45:00Z', text: 'I couldn\'t really get into this one, unfortunately. The writing style wasn\'t for me.' },
+//     ] as ReviewPlaceholder[], // Dùng type placeholder
+//     totalItems: 25, // Tổng số review giả
+//     totalPages: 3,  // Tổng số trang giả (25 items / 10 limit)
+//     currentPage: 1, // Trang hiện tại giả
+//     averageRating: 4.1, // Rating trung bình giả
+//     ratingCounts: [ // Số lượng giả cho mỗi rating
+//       { stars: 5, count: 15 },
+//       { stars: 4, count: 5 },
+//       { stars: 3, count: 3 },
+//       { stars: 2, count: 1 },
+//       { stars: 1, count: 1 },
+//     ] as RatingCount[],
+//   };
   // --- *** KẾT THÚC DỮ LIỆU GIẢ *** ---
 
 // --- Props Interface ---
@@ -128,14 +128,13 @@ const generatePageNumbers = (currentPage: number, totalPages: number): (number |
 // --- Component ---
 const CustomerReview = ({ productId }: CustomerReviewProps) => {
   // --- State ---
-//   const [reviewsResponse, setReviewsResponse] = useState<ReviewListResponse | null>(null);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-
+  const [reviewsResponse, setReviewsResponse] = useState<ReviewListResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+const [currentPage, setCurrentPage] = useState(DEFAULT_CURRENT_PAGE);
+const [limit, setLimit] = useState(DEFAULT_REVIEW_LIMIT);
+const [sortOption, setSortOption] = useState(DEFAULT_REVIEW_SORT);
 const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm state cho filter rating
-  const [currentPage, setCurrentPage] = useState(DEFAULT_CURRENT_PAGE);
-  const [limit, setLimit] = useState(DEFAULT_REVIEW_LIMIT);
-  const [sortOption, setSortOption] = useState(DEFAULT_REVIEW_SORT);
 
   // State for Write Review Form
   const [reviewTitle, setReviewTitle] = useState('');
@@ -146,32 +145,34 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
   // --- ---
 
   // --- Data Fetching Effect ---
-//   const fetchReviews = useCallback(async () => {
-//     if (!productId) return;
-//     setIsLoading(true);
-//     setError(null);
-//     const [sortBy, order] = sortOption.split('.');
-//     const params: ReviewParams = {
-//       page: currentPage,
-//       limit: limit,
-//       sortBy: sortBy as ReviewParams['sortBy'],
-//       order: order as ReviewParams['order'],
-//     };
-//     try {
-//       const data = await getReviewsByProductId(productId, params);
-//       setReviewsResponse(data);
-//     } catch (err: any) {
-//       setError(err.message || 'Failed to load reviews.');
-//       setReviewsResponse(null); // Reset data on error
-//       console.error("Error fetching reviews:", err);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   }, [productId, currentPage, limit, sortOption]);
+  const fetchReviews = useCallback(async () => {
+    if (!productId) return;
+    setIsLoading(true);
+    setError(null);
+    const [sortBy, order] = sortOption.split('.');
+    const params: ReviewParams = {
+      rating: activeRating ?? undefined, // <-- Lấy giá trị activeRating mới nhất từ state
+      // --- ---
+      page: currentPage,
+      limit: limit,
+      orderBy: sortBy as ReviewParams['orderBy'],
+      order: order as ReviewParams['order'],
+    };
+    try {
+      const data = await getReviewsByProductId(productId, params);
+      setReviewsResponse(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load reviews.');
+      setReviewsResponse(null); // Reset data on error
+      console.error("Error fetching reviews:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [productId, currentPage, limit, sortOption, activeRating]);
 
-//   useEffect(() => {
-//     fetchReviews();
-//   }, [fetchReviews]);
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
   // --- ---
 
   // --- Event Handlers ---
@@ -182,15 +183,15 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
 };
 
   const handlePageChange = (newPage: number) => {
-    //   if (newPage >= 1 && newPage <= (reviewsResponse?.totalPages ?? 1)) {
-    //       setCurrentPage(newPage);
-    //       // Optional: Scroll to top of reviews section
-    //       // document.getElementById('customer-reviews-heading')?.scrollIntoView({ behavior: 'smooth' });
-    //   }
-    const totalPgs = placeholderReviewsResponse?.totalPages ?? 1; // Dùng totalPages từ data giả
-       if (newPage >= 1 && newPage <= totalPgs) {
-           setCurrentPage(newPage);
-       }
+      if (newPage >= 1 && newPage <= (reviewsResponse?.totalPages ?? 1)) {
+          setCurrentPage(newPage);
+          // Optional: Scroll to top of reviews section
+          // document.getElementById('customer-reviews-heading')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    // const totalPgs = placeholderReviewsResponse?.totalPages ?? 1; // Dùng totalPages từ data giả
+    //    if (newPage >= 1 && newPage <= totalPgs) {
+    //        setCurrentPage(newPage);
+    //    }
   };
 
   const handleSortChange = (value: string) => {
@@ -211,30 +212,38 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
   const handleReviewSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       setSubmitReviewError(null);
+
+      if (!reviewTitle.trim()) { // Kiểm tra title không rỗng hoặc chỉ chứa khoảng trắng
+        setSubmitReviewError("Please add a title for your review.");
+        return;
+    }
+
       if (!reviewRating) {
           setSubmitReviewError("Please select a rating star.");
           return;
       }
       setIsSubmittingReview(true);
       console.log("Submitting review:", { title: reviewTitle, details: reviewDetails, rating: reviewRating });
+
+      const reviewData: ReviewCreatePayload = {
+        ratingStar: parseInt(reviewRating, 10), // Chuyển thành số
+        reviewTitle: reviewTitle.trim(), // Chỉ gửi nếu có giá trị
+        ...(reviewDetails.trim() && { reviewDetails: reviewDetails.trim() }) // Chỉ gửi nếu có giá trị
+    };
+
       try {
           // TODO: Replace with actual API call to post the review
-          // await postReviewApi(productId, {
-          //     title: reviewTitle,
-          //     text: reviewDetails,
-          //     rating: parseInt(reviewRating, 10)
-          // });
-          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+          await postReview(productId, reviewData);
+          // await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
           toast.success("Review submitted successfully! It may take some time to appear.");
 
           // Reset form and potentially refetch reviews
           setReviewTitle('');
           setReviewDetails('');
           setReviewRating('');
-          if(currentPage !== 1) {
-            setCurrentPage(1); // Go to page 1 after submit might not show the new review
-          }
-        //   fetchReviews(); // Refetch reviews to potentially show the new one (or after moderation)
+          // Fetch lại trang 1 để xem review mới (hoặc không nếu cần moderation)
+          if(currentPage !== 1) setCurrentPage(1);
+          else fetchReviews(); // Nếu đang ở trang 1 thì fetch lại luôn
 
       } catch (err: any) {
            const message = err.message || "Failed to submit review.";
@@ -272,23 +281,46 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
 //     }, [reviewsResponse?.ratingCounts]);
 
   // --- Lấy dữ liệu từ DỮ LIỆU GIẢ ---
-  const reviews = placeholderReviewsResponse.items.slice(0, limit); // Lấy số lượng theo limit
-  const totalItems = placeholderReviewsResponse.totalItems;
-  const totalPages = Math.ceil(totalItems / limit); // Tính lại totalPages dựa trên limit hiện tại
-  // const currentPage = placeholderReviewsResponse.currentPage; // << Dùng state currentPage
-  const averageRating = placeholderReviewsResponse.averageRating;
-  const ratingCountsMap = useMemo(() => {
-      const map = new Map<number, number>();
-      placeholderReviewsResponse.ratingCounts?.forEach(rc => map.set(rc.stars, rc.count));
-      return map;
-  }, []); // Chỉ tính 1 lần vì data giả không đổi
+  // const reviews = placeholderReviewsResponse.items.slice(0, limit); // Lấy số lượng theo limit
+  // const totalItems = placeholderReviewsResponse.totalItems;
+  // const totalPages = Math.ceil(totalItems / limit); // Tính lại totalPages dựa trên limit hiện tại
+  // // const currentPage = placeholderReviewsResponse.currentPage; // << Dùng state currentPage
+  // const averageRating = placeholderReviewsResponse.averageRating;
+  // const ratingCountsMap = useMemo(() => {
+  //     const map = new Map<number, number>();
+  //     placeholderReviewsResponse.ratingCounts?.forEach(rc => map.set(rc.stars, rc.count));
+  //     return map;
+  // }, []); // Chỉ tính 1 lần vì data giả không đổi
+
+  // -- Dữ liệu thật ---
+   const reviews = reviewsResponse?.items ?? [];
+   const totalItems = reviewsResponse?.totalItems ?? 0; // Lấy lại totalItems
+   const totalPages = reviewsResponse?.totalPages ?? 1;
+   const ratingCount = reviewsResponse?.ratingCount ?? 0; // Tổng số review
+   const averageRating = reviewsResponse?.averageRating ?? 0;
+   const ratingCounts = reviewsResponse?.ratingCounts ?? {}; // Giờ là object
 
    const startItem = totalItems === 0 ? 0 : (currentPage - 1) * limit + 1;
-   const endItem = Math.min(currentPage * limit, totalItems);
+  //  const endItem = Math.min(currentPage * limit, totalItems);
+   const endItem = startItem + reviews.length - 1; // Tính end item dựa trên số lượng item trả về của trang hiện tại
    const currentSortLabel = REVIEW_SORT_OPTIONS.find(opt => opt.value === sortOption)?.label || 'Sort by...';
    const currentLimitLabel = `Show ${limit}`;
    const pageNumbers = useMemo(() => generatePageNumbers(currentPage, totalPages), [currentPage, totalPages]);
   // --- ---
+
+  // --- Hàm định dạng ngày tháng ---
+  const formatDate = (dateString: string): string => {
+    try {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+    } catch (e) {
+        return dateString; // Trả về chuỗi gốc nếu không parse được
+    }
+};
+ // --- ---
 
 
   return (
@@ -304,27 +336,41 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
           </h2>
 
           {/* Rating Summary */}
-          <div className="text-sm">
+          <div className="text-md">
              <div > {/* flex-wrap for smaller screens */}
-                <p className="text-3xl font-bold">{averageRating > 0 ? averageRating.toFixed(1) : '-'}<span className='text-lg font-medium ml-1'>Star</span></p>
+                <p className="text-3xl font-bold">{averageRating > 0 ? averageRating.toFixed(1) : '-'}<span className='text-3xl font-medium ml-1'>Star</span></p>
                 {/* Text + Link filter phân loại sao */}
                  {/* Căn chỉnh items-baseline để số và text thẳng hàng */}
-                 <div className='flex items-baseline gap-x-2 flex-wrap text-xs text-muted-foreground'>
-                     <span>({totalItems})</span>
-                     {[5, 4, 3, 2, 1].map(star => (
-                        <React.Fragment key={star}>
-                            <span>|</span>
-                            <button
-                                onClick={() => handleRatingFilterClick(star)}
-                                className={cn(
-                                    "hover:text-primary hover:underline underline-offset-2",
-                                    activeRating === star && "text-primary font-semibold" // Style khi active
-                                )}
-                            >
-                               {star} star ({ratingCountsMap.get(star) || 0})
-                            </button>
-                        </React.Fragment>
-                     ))}
+                 <div className='flex items-baseline gap-x-2 flex-wrap text-md text-muted-foreground'>
+                     {/* --- Nút bấm tổng số review (Clear filter) --- */}
+                     <button
+                         onClick={() => handleRatingFilterClick(null)}
+                         className={cn(
+                             "hover:text-primary hover:underline underline-offset-2",
+                             activeRating === null && "text-primary font-semibold" // Active khi không có filter rating
+                         )}
+                     >
+                        ({ratingCount})
+                     </button>
+                     {/* --- --- */}
+                     {[5, 4, 3, 2, 1].map(star => {
+                         // Lấy count từ dictionary ratingCounts
+                         const count = ratingCounts[String(star)] ?? 0;
+                         return (
+                             <React.Fragment key={star}>
+                                 <span>|</span>
+                                 <button
+                                     onClick={() => handleRatingFilterClick(star)}
+                                     disabled={count === 0 && !activeRating} // Disable nếu count=0 và không có filter nào khác active
+                                     className={cn( "hover:text-primary hover:underline underline-offset-2", activeRating === star && "text-primary font-semibold", count === 0 && !activeRating && "opacity-50 cursor-not-allowed hover:no-underline hover:text-muted-foreground" )} >
+                                    {star} star ({count})
+                                 </button>
+                             </React.Fragment>
+                         );
+                     })}
+                      {/* {activeRating !== null && (
+                          <React.Fragment><span>|</span><button onClick={() => handleRatingFilterClick(null)} className="hover:text-primary hover:underline underline-offset-2 text-primary">(Clear Filter)</button></React.Fragment>
+                      )} */}
                  </div>
              </div>
           </div>
@@ -332,26 +378,29 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
           {/* Review List Header */}
            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                <p className="text-sm text-muted-foreground">
-                  {/* {!isLoading && (totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} reviews` : 'No reviews yet.')}
-                  {isLoading && <span className='animate-pulse'>Loading reviews...</span>} */}
-                  {totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} reviews` : 'No reviews yet.'}
+                  {!isLoading && (totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} reviews` : 'No reviews yet.')}
+                  {isLoading && <span className='animate-pulse'>Loading reviews...</span>}
+                  {/* {totalItems > 0 ? `Showing ${startItem}–${endItem} of ${totalItems} reviews` : 'No reviews yet.'} */}
                </p>
                <div className="flex items-center space-x-2">
+                {/* Sort */}
                  <DropdownMenu>
-                   <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-xs">{currentSortLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                   <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-md">{currentSortLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
                    <DropdownMenuContent align="end">
                      {/* <DropdownMenuLabel>Sort By</DropdownMenuLabel><DropdownMenuSeparator /> */}
                      <DropdownMenuRadioGroup value={sortOption} onValueChange={handleSortChange}>
-                        {REVIEW_SORT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt.value} value={opt.value} className="[&>span]:hidden pr-2 text-xs">{opt.label}</DropdownMenuRadioItem> ))}
+                        {REVIEW_SORT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt.value} value={opt.value} className="[&>span]:hidden pr-2 text-md">{opt.label}</DropdownMenuRadioItem> ))}
                      </DropdownMenuRadioGroup>
                    </DropdownMenuContent>
                  </DropdownMenu>
+
+                 {/* Show page limit */}
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-xs">{currentLimitLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-md">{currentLimitLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                        {/* <DropdownMenuLabel>Show per page</DropdownMenuLabel><DropdownMenuSeparator /> */}
                        <DropdownMenuRadioGroup value={String(limit)} onValueChange={handleLimitChange}>
-                          {REVIEW_LIMIT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt} value={String(opt)} className="[&>span]:hidden pr-2 text-xs">Show {opt}</DropdownMenuRadioItem> ))}
+                          {REVIEW_LIMIT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt} value={String(opt)} className="[&>span]:hidden pr-2 text-md">Show {opt}</DropdownMenuRadioItem> ))}
                         </DropdownMenuRadioGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -360,33 +409,33 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
 
           {/* Review List */}
           {
-        //   isLoading ? (
-        //      <div className="space-y-6">
-        //          {Array.from({ length: 3 }).map((_, i) => ( // Hiển thị ít skeleton hơn
-        //              <div key={`rev-skel-${i}`} className="border-b pb-6 space-y-2 animate-pulse last:border-b-0">
-        //                  <div className="flex justify-between">
-        //                      <div className="h-5 w-3/5 bg-muted rounded"></div>
-        //                      <div className="h-4 w-12 bg-muted rounded"></div>
-        //                  </div>
-        //                  <div className="h-3 w-1/4 bg-muted rounded"></div>
-        //                  <div className="h-4 w-full bg-muted rounded"></div>
-        //                  <div className="h-4 w-5/6 bg-muted rounded"></div>
-        //              </div>
-        //          ))}
-        //      </div>
-        //   ) : error ? (
-        //      <p className="text-destructive text-center py-10">{error}</p>
-        //   ) : 
+          isLoading ? ( // Skeleton
+             <div className="space-y-6">
+                 {Array.from({ length: 3 }).map((_, i) => ( // Hiển thị ít skeleton hơn
+                     <div key={`rev-skel-${i}`} className="border-b pb-6 space-y-2 animate-pulse last:border-b-0">
+                         <div className="flex justify-between">
+                             <div className="h-5 w-3/5 bg-muted rounded"></div>
+                             <div className="h-4 w-12 bg-muted rounded"></div>
+                         </div>
+                         <div className="h-3 w-1/4 bg-muted rounded"></div>
+                         <div className="h-4 w-full bg-muted rounded"></div>
+                         <div className="h-4 w-5/6 bg-muted rounded"></div>
+                     </div>
+                 ))}
+             </div>
+          ) : error ? (
+             <p className="text-destructive text-center py-10">{error}</p>
+          ) : 
           reviews.length > 0 ? (
              <div className="space-y-6">
-                {reviews.map(review => (
-                   <article key={review.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                {reviews.map((review, index) => (
+                   <article key={index} className="border-b pb-6 last:border-b-0 last:pb-0">
                       <div className="flex justify-between items-center gap-2 mb-1">
-                         <h4 className="font-semibold text-base">{review.title || 'Review'}</h4>
-                         <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">{review.rating} stars</span>
+                         <h4 className="font-semibold text-base">{review.reviewTitle || 'Review'}</h4>
+                         <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">{review.ratingStar} stars</span>
                       </div>
-                      <p className="text-sm leading-relaxed mb-2">{review.text}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p> {/* Format date */}
+                      <p className="text-sm leading-relaxed mb-2">{review.reviewDetails}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(review.reviewDate)}</p> {/* Format date */}
                    </article>
                 ))}
              </div>
@@ -396,7 +445,7 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
 
           {/* Pagination */}
           {
-        //   !isLoading && 
+          !isLoading && 
           totalItems > 0 && totalPages > 1 && (
               <div className="pt-6 text-center">
                   <Pagination className="inline-flex">
@@ -421,16 +470,23 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
         <div>
            <Card className='overflow-hidden rounded-md'>
              <CardHeader className="px-6 pt-4 bg-muted/50 border-b">
-               <CardTitle className=''>Write a Review</CardTitle>
+               <CardTitle className='text-lg'>Write a Review</CardTitle>
              </CardHeader>
              <CardContent>
                 <form onSubmit={handleReviewSubmit} className="space-y-4">
                    <div>
-                     <Label htmlFor="review-title" className="text-sm font-medium block mb-1.5">Add a title</Label>
-                     <Input id="review-title" placeholder="What's most important to know?" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} disabled={isSubmittingReview} />
+                     <Label htmlFor="review-title" className="text-sm font-medium block mb-1.5">Add a title <span className="text-destructive">*</span></Label>
+                     <Input 
+                      id="review-title" 
+                      placeholder="What's most important to know?" 
+                      value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} 
+                      disabled={isSubmittingReview}
+                      maxLength={120}
+                      required
+                      />
                    </div>
                    <div>
-                     <Label htmlFor="review-details" className="text-sm font-medium block mb-1.5">Details please!</Label>
+                     <Label htmlFor="review-details" className="text-sm font-medium block mb-1.5">Details please! Your review helps other shoppers.</Label>
                      <Textarea id="review-details" placeholder="Your review helps other shoppers." rows={5} value={reviewDetails} onChange={(e) => setReviewDetails(e.target.value)} disabled={isSubmittingReview} />
                    </div>
                    <div>

@@ -9,6 +9,7 @@ const ENDPOINTS = {
   LOGIN: '/auth/token', // Endpoint /token của FastAPI
   GET_ME: '/auth/users/me', // Endpoint lấy thông tin user hiện tại
   REFRESH: '/auth/refresh', // <-- Endpoint refresh token
+  LOGOUT: '/auth/logout', // Endpoint logout mới
 };
 
 /**
@@ -26,7 +27,8 @@ export const loginUser = async (emailAsUsername: string, password: string): Prom
 
   try {
     const response = await apiClient.post<TokenResponse>(ENDPOINTS.LOGIN, formData, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' } // Quan trọng: Set header
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, // Quan trọng: Set header
+      withCredentials: true, // QUAN TRỌNG: Cho phép gửi/nhận cookie cross-origin nếu cần
     });
     // Axios interceptor sẽ tự camelize response keys (accessTokenResponse, refreshTokenResponse)
     return response.data;
@@ -43,18 +45,38 @@ export const loginUser = async (emailAsUsername: string, password: string): Prom
  * Gửi refresh token hiện tại để lấy cặp token mới.
  * Sử dụng apiClient vì request này tự nó là một hình thức xác thực.
  */
-export const refreshTokenApi = async (currentRefreshToken: string): Promise<TokenResponse> => {
+export const refreshTokenApi = async (): Promise<TokenResponse> => {
   // Backend mong đợi {"refresh_token": "..."} sau khi decamelize
-  const payload = { refreshToken: currentRefreshToken };
+  // const payload = { refreshToken: currentRefreshToken };
   try {
       // Gọi endpoint /auth/refresh
-      const response = await apiClient.post<TokenResponse>(ENDPOINTS.REFRESH, payload);
+      const response = await apiClient.post<TokenResponse>(
+        ENDPOINTS.REFRESH, 
+        // payload
+        {},
+        {
+          withCredentials: true, // QUAN TRỌNG: Để trình duyệt gửi HttpOnly cookie
+        }
+      );
       // Response data đã được camelize bởi interceptor của apiClient
       return response.data;
   } catch (error) {
       console.error("Refresh token API error:", error);
       // Ném lỗi để interceptor gốc (handleAuthApiError) xử lý việc logout
       throw error;
+  }
+}
+
+// Hàm logout mới
+export const logoutApi = async (): Promise<void> => {
+  try {
+      // Dùng authApiClient vì cần access token để biết user nào logout
+      await authApiClient.post(ENDPOINTS.LOGOUT);
+      // Backend sẽ xóa HttpOnly cookie
+  } catch (error) {
+       // Thường không cần xử lý lỗi logout nghiêm trọng ở đây
+       // Có thể log lỗi nhưng vẫn tiếp tục logout ở client
+      console.error("Logout API error (ignoring):", error);
   }
 }
 // --- ---

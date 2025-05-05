@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from ..constants.enums import SortFactor, SortOrder
+from ..constants.enums import BookSortFactor, ReviewSortFactor, SortOrder
 
-class FilterParam(BaseModel):
+class BookFilterParam(BaseModel):
     """
     Query parameters for filtering data.
     """
@@ -9,12 +9,21 @@ class FilterParam(BaseModel):
     category: int | None = None
     rating: int | None = None
 
+class ReviewFilterParam(BaseModel):
+    rating: int | None = None
+
 class OrderParam(BaseModel):
     """
     Query parameters for ordering data.
     """
-    order_by: SortFactor | None = None
+    order_by: str | None = None
     order: SortOrder = SortOrder.DESCENDING
+
+class BookOrderParam(OrderParam):
+    order_by: BookSortFactor | None = None
+
+class ReviewOrderParam(OrderParam):
+    order_by: ReviewSortFactor | None = None
 
 class PaginationParam(BaseModel):
     """

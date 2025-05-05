@@ -28,6 +28,15 @@ def refresh_token_service(session: Session, token: str) -> dict[str, any]:
     user_id: str | None = payload.get("sub") # Đã được kiểm tra tồn tại trong helper
     token_type: str | None = payload.get("type")
 
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate refresh token credentials",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+
+    try: user_id_int = int(user_id) if user_id is not None else None
+    except: user_id_int = None
+
     # Kiểm tra logic cụ thể cho refresh token SAU KHI đã xác thực cơ bản
     if token_type != "refresh":
          raise HTTPException(
@@ -35,8 +44,10 @@ def refresh_token_service(session: Session, token: str) -> dict[str, any]:
             detail="Invalid token type, expected 'refresh'",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    elif user_id_int is None:
+        raise credentials_exception
 
-    user = get_user_by_id(session, user_id=user_id) # Lấy user từ DB bằng ID
+    user = get_user_by_id(session, user_id=user_id_int) # Lấy user từ DB bằng ID
 
     if user is None: # Chỉ cần kiểm tra user tồn tại
         # User trong token không còn tồn tại trong DB

@@ -1,12 +1,18 @@
 from enum import Enum
 
-class SortFactor(str, Enum):
+class BookSortFactor(str, Enum):
     """
-    Enum for sorting factors.
+    Enum for book sorting factors.
     """
     SALE = "sale"
     POPULARITY = "popularity"
     PRICE = "price"
+
+class ReviewSortFactor(str, Enum):
+    """
+    Enum for review sorting factors.
+    """
+    DATE = "date"
 
 class SortOrder(str, Enum):
     """

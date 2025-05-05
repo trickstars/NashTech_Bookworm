@@ -446,7 +446,7 @@ if (isSuccessModalOpen) {
         {cartItems.length > 0 && (
           <div className="lg:sticky lg:top-20 self-start">
             <Card className="overflow-hidden">
-              <CardHeader className="flex justify-center items-center text-center bg-muted/50 border-b pb-0">
+              <CardHeader className="flex justify-center items-center text-center bg-muted/50 border-b pb-0 pt-6">
                 <CardTitle className="text-base font-bold">Cart Totals</CardTitle>
               </CardHeader>
               <CardContent className="p-6 flex justify-center items-center">
