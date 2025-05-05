@@ -336,12 +336,12 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
           </h2>
 
           {/* Rating Summary */}
-          <div className="text-sm">
+          <div className="text-md">
              <div > {/* flex-wrap for smaller screens */}
-                <p className="text-3xl font-bold">{averageRating > 0 ? averageRating.toFixed(1) : '-'}<span className='text-lg font-medium ml-1'>Star</span></p>
+                <p className="text-3xl font-bold">{averageRating > 0 ? averageRating.toFixed(1) : '-'}<span className='text-3xl font-medium ml-1'>Star</span></p>
                 {/* Text + Link filter phân loại sao */}
                  {/* Căn chỉnh items-baseline để số và text thẳng hàng */}
-                 <div className='flex items-baseline gap-x-2 flex-wrap text-xs text-muted-foreground'>
+                 <div className='flex items-baseline gap-x-2 flex-wrap text-md text-muted-foreground'>
                      {/* --- Nút bấm tổng số review (Clear filter) --- */}
                      <button
                          onClick={() => handleRatingFilterClick(null)}
@@ -385,22 +385,22 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
                <div className="flex items-center space-x-2">
                 {/* Sort */}
                  <DropdownMenu>
-                   <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-xs">{currentSortLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                   <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-md">{currentSortLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
                    <DropdownMenuContent align="end">
                      {/* <DropdownMenuLabel>Sort By</DropdownMenuLabel><DropdownMenuSeparator /> */}
                      <DropdownMenuRadioGroup value={sortOption} onValueChange={handleSortChange}>
-                        {REVIEW_SORT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt.value} value={opt.value} className="[&>span]:hidden pr-2 text-xs">{opt.label}</DropdownMenuRadioItem> ))}
+                        {REVIEW_SORT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt.value} value={opt.value} className="[&>span]:hidden pr-2 text-md">{opt.label}</DropdownMenuRadioItem> ))}
                      </DropdownMenuRadioGroup>
                    </DropdownMenuContent>
                  </DropdownMenu>
 
                  {/* Show page limit */}
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-xs">{currentLimitLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="flex items-center gap-1 text-md">{currentLimitLabel} <ChevronDown className="h-3 w-3" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                        {/* <DropdownMenuLabel>Show per page</DropdownMenuLabel><DropdownMenuSeparator /> */}
                        <DropdownMenuRadioGroup value={String(limit)} onValueChange={handleLimitChange}>
-                          {REVIEW_LIMIT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt} value={String(opt)} className="[&>span]:hidden pr-2 text-xs">Show {opt}</DropdownMenuRadioItem> ))}
+                          {REVIEW_LIMIT_OPTIONS.map(opt => ( <DropdownMenuRadioItem key={opt} value={String(opt)} className="[&>span]:hidden pr-2 text-md">Show {opt}</DropdownMenuRadioItem> ))}
                         </DropdownMenuRadioGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -470,7 +470,7 @@ const [activeRating, setActiveRating] = useState<number | null>(null); // Thêm 
         <div>
            <Card className='overflow-hidden rounded-md'>
              <CardHeader className="px-6 pt-4 bg-muted/50 border-b">
-               <CardTitle className=''>Write a Review</CardTitle>
+               <CardTitle className='text-lg'>Write a Review</CardTitle>
              </CardHeader>
              <CardContent>
                 <form onSubmit={handleReviewSubmit} className="space-y-4">
