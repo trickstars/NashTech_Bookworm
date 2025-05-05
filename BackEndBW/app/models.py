@@ -2,6 +2,7 @@ from sqlmodel import Field, SQLModel, Relationship, CheckConstraint
 # from typing import Optional, list
 from datetime import date, datetime
 
+from app.schemas.review import ReviewBase
 from app.schemas.order import OrderItemBase
 
 from .schemas.author import AuthorBase
@@ -45,13 +46,10 @@ class Book(BookBase, table=True):
     reviews: list["Review"] = Relationship(back_populates="book", passive_deletes=True)
     # order_items: list["OrderItem"] = Relationship(back_populates="book") # no need to save this information
 
-class Review(SQLModel, table=True):
+class Review(ReviewBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     book_id: int = Field(foreign_key="book.id", ondelete="CASCADE")
-    review_title: str = Field(max_length=120)
-    review_details: str | None = Field(default=None)
-    review_date: datetime
-    rating_star: int = Field(ge=1, le=5)
+    
     __table_args__ = (
         CheckConstraint("rating_star >= 1", name="check_rating_star_min"),
         CheckConstraint("rating_star <= 5", name="check_rating_star_max"),
